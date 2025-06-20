@@ -1,0 +1,2 @@
+# This file ensures the uploads/papers directory is tracked in Git
+# The actual uploaded files are ignored by .gitignore 

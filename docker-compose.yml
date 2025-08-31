@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -25,8 +23,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./fastapi_app/frontend:/app
-      - frontend-node-modules:/app/node_modules
+      - ./fastapi_app/frontend/src:/app/src
+      - ./fastapi_app/frontend/public:/app/public
     environment:
       - NODE_ENV=development
       - REACT_APP_API_URL=http://localhost:8000

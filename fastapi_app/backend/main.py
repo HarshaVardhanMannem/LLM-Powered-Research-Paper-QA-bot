@@ -11,6 +11,7 @@ from datetime import datetime
 import uuid
 import fitz  # PyMuPDF
 from langchain.schema import Document
+import hashlib
 
 # Configure logging
 logging.basicConfig(
@@ -31,7 +32,8 @@ from src.data.document_loader import (
     preprocess_documents,
     create_document_chunks,
     create_metadata_chunks,
-    load_single_arxiv_document
+    load_single_arxiv_document,
+    create_text_splitter
 )
 from src.embedding.embeddings import get_embedder
 from src.retrieval.vector_store import (
@@ -195,9 +197,82 @@ async def chat(question: Question):
         logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/papers/upload")
+async def upload_file(file: UploadFile = File(...)):
+    logger.info(f"Received file upload request for: {file.filename}")
+    
+    try:
+        # Validate file type
+        if not file.filename.lower().endswith('.pdf'):
+            logger.warning(f"Invalid file type: {file.filename}")
+            raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
+        
+        # Read file contents
+        contents = await file.read()
+        
+        # Validate file size
+        if len(contents) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail=f"File size exceeds the limit of {MAX_FILE_SIZE / (1024*1024)}MB.")
+        
+        # Generate content hash to check for duplicates
+        content_hash = hashlib.md5(contents).hexdigest()
+        
+        # Check if this file (by hash) has already been uploaded
+        existing_paper = next((p for p in resources["loaded_papers"] if p.get('content_hash') == content_hash), None)
+        if existing_paper:
+            logger.info(f"File already exists: {existing_paper['title']}")
+            return {
+                "message": f"File already uploaded: {existing_paper['title']}", 
+                "papers": resources["loaded_papers"]
+            }
+        
+        # Load and process the document directly from memory
+        logger.debug("Attempting to load PDF document from memory")
+        doc = load_pdf_from_bytes(contents, filename=file.filename)
+        
+        # We get a single Document object back, not a list
+        text_splitter = create_text_splitter()
+        chunks = text_splitter.split_documents([doc])  # split_documents expects a list
+        
+        if not chunks:
+            logger.error("Document processed but no chunks were created.")
+            raise HTTPException(status_code=500, detail="Failed to process document into chunks.")
+        
+        # Add to vector store
+        add_documents_to_vector_store(resources["docstore"], chunks)
+        logger.debug("Documents added to vector store successfully.")
+        
+        # Update resources
+        title = doc.metadata.get('Title', file.filename)
+        paper_id = str(uuid.uuid4())
+        
+        # Add with content hash for duplicate detection
+        resources["loaded_papers"].append({
+            'id': paper_id, 
+            'title': title, 
+            'content_hash': content_hash
+        })
+        resources["doc_string"] += f"\n - {title}"
+        
+        logger.info(f"Successfully uploaded and processed paper: {title}")
+        return {"message": f"Successfully uploaded and processed paper: {title}", "papers": resources["loaded_papers"]}
+    
+    except HTTPException as e:
+        logger.warning(f"HTTP Exception during file upload: {e.detail}")
+        raise e
+    except Exception as e:
+        logger.error(f"An unexpected error occurred during file upload: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+
 def add_paper_to_resources(paper_id, resources):
     """Add a new paper to existing resources."""
     try:
+        # Check if paper already exists BEFORE processing
+        if any(p['id'] == paper_id for p in resources["loaded_papers"]):
+            existing_paper = next(p for p in resources["loaded_papers"] if p['id'] == paper_id)
+            return True, f"Paper already loaded: {existing_paper['title']}"
+        
         # Load single document
         new_doc = load_single_arxiv_document(paper_id)
         if not new_doc or len(new_doc) == 0:
@@ -218,12 +293,12 @@ def add_paper_to_resources(paper_id, resources):
         metadata = getattr(new_doc_chunks[0][0], 'metadata', {})
         title = metadata.get('Title', 'Untitled')
         resources["doc_string"] += f"\n - {title}"
-        if not any(p['id'] == paper_id for p in resources["loaded_papers"]):
-            resources["loaded_papers"].append({'id': paper_id, 'title': title})
+        resources["loaded_papers"].append({'id': paper_id, 'title': title})
         
         return True, f"Successfully added paper: {title}"
     except Exception as e:
         return False, f"Error processing paper {paper_id}: {str(e)}"
+
 
 @app.post("/papers/add")
 async def add_paper(paper: PaperAdd):
@@ -254,132 +329,27 @@ async def submit_feedback(feedback: Feedback):
     except Exception as e:
         logger.error(f"Error saving feedback: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-# Replace your upload_file function with this fixed version:
 
-@app.post("/papers/upload")
-async def upload_file(file: UploadFile = File(...)):
-    logger.info(f"Received file upload request for: {file.filename}")
-    logger.debug(f"File content type: {file.content_type}")
-    file_path = None
+
+def load_pdf_from_bytes(pdf_bytes, filename):
+    """Loads a PDF from bytes and extracts text, returns a single Document object."""
+    doc_reader = None
     try:
-        # Validate file type
-        if not file.filename.lower().endswith('.pdf'):
-            logger.warning(f"Invalid file type: {file.filename}")
-            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-
-        # Create uploads directory if it doesn't exist
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        
-        # Generate a unique filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        unique_filename = f"{timestamp}_{file.filename}"
-        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-        
-        # Save the uploaded file
-        try:
-            contents = await file.read()
-            with open(file_path, "wb") as f:
-                f.write(contents)
-            logger.debug(f"File saved successfully at: {file_path}")
-        except Exception as e:
-            logger.error(f"Error saving file: {str(e)}")
-            raise HTTPException(status_code=500, detail="Error saving uploaded file")
-        
-        # Load the PDF document
-        try:
-            logger.debug("Attempting to load PDF document")
-            docs = load_pdf_as_document(file_path)  # Returns [Document]
-            if not docs:
-                logger.error("No documents were loaded from the PDF")
-                raise HTTPException(status_code=400, detail="Failed to load PDF document")
-            logger.debug(f"Successfully loaded {len(docs)} documents from PDF")
-        except Exception as e:
-            logger.error(f"Error loading PDF: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=400, detail=f"Invalid PDF file: {str(e)}")
-            
-        # Preprocess the document - FIXED: wrap docs in another list
-        try:
-            logger.debug("Starting document preprocessing")
-            # docs is [Document], but preprocess_documents expects [[Document]]
-            docs_wrapped = [docs]  # Now it's [[Document]]
-            docs_processed = preprocess_documents(docs_wrapped)  # Returns [[Document]]
-            logger.debug("Document preprocessing completed")
-            logger.debug("Creating document chunks")
-            doc_chunks = create_document_chunks(docs_processed)  # Now gets correct format
-            logger.debug(f"Created {len(doc_chunks)} document chunks")
-        except Exception as e:
-            logger.error(f"Error preprocessing document: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
-        
-        # Add to vector store
-        try:
-            logger.debug("Adding documents to vector store")
-            # doc_chunks is now [chunks_for_paper1], so we use doc_chunks[0]
-            add_documents_to_vector_store(resources["docstore"], doc_chunks[0])
-            logger.debug("Documents added to vector store successfully")
-        except Exception as e:
-            logger.error(f"Error adding to vector store: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error adding document to vector store: {str(e)}")
-        
-        # Update document string and loaded_papers
-        try:
-            metadata = getattr(doc_chunks[0][0], 'metadata', {})
-            title = metadata.get('Title', file.filename)  # Fallback to filename
-            resources["doc_string"] += f"\n - {title}"
-            
-            # Generate a unique ID for the uploaded paper
-            paper_id = str(uuid.uuid4())
-            resources["loaded_papers"].append({'id': paper_id, 'title': title})
-            logger.debug(f"Successfully added paper: {title} with ID: {paper_id}")
-        except Exception as e:
-            logger.error(f"Error updating resources: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error updating resources: {str(e)}")
-        
-        return {"message": f"Successfully uploaded and processed paper: {title}", "papers": resources["loaded_papers"]}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error processing uploaded file: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Clean up the file if it was created and there was an error
-        if file_path and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                logger.debug(f"Cleaned up temporary file: {file_path}")
-            except Exception as e:
-                logger.error(f"Error cleaning up file: {str(e)}")
-
-
-# Also update your load_pdf_as_document function:
-def load_pdf_as_document(file_path):
-    try:
-        logger.debug(f"Opening PDF file: {file_path}")
-        doc = fitz.open(file_path)
-        logger.debug(f"PDF opened successfully, number of pages: {len(doc)}")
-        
-        # Extract text from all pages
+        doc_reader = fitz.open(stream=pdf_bytes, filetype="pdf")
         text = ""
-        for page in doc:
-            page_text = page.get_text()
-            if page_text.strip():  # Only add non-empty pages
-                text += page_text + "\n"
+        for page in doc_reader:
+            text += page.get_text()
         
         if not text.strip():
-            raise ValueError("No readable text found in PDF")
-            
-        logger.debug(f"Extracted text length: {len(text)} characters")
-        filename = os.path.basename(file_path)
-        
-        # Return list of Document objects (matching arxiv format)
-        return [Document(page_content=text, metadata={"Title": filename, "source": file_path})]
-        
+            raise ValueError("No text content found in PDF")
+
+        return Document(page_content=text, metadata={"Title": filename, "source": filename})
     except Exception as e:
-        logger.error(f"Error in load_pdf_as_document: {str(e)}", exc_info=True)
+        logger.error(f"Failed to load or read PDF {filename}: {str(e)}", exc_info=True)
         raise
     finally:
-        if 'doc' in locals():
-            doc.close()
+        if doc_reader:
+            doc_reader.close()
 
 @app.get("/feedback/stats")
 async def get_feedback_stats():

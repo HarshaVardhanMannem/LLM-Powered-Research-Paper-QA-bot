@@ -3,7 +3,7 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { Feedback as FeedbackIcon } from '@mui/icons-material';
 
-const FeedbackStats = ({ stats }) => {
+const FeedbackStats = ({ feedbackStats = { likes: 0, dislikes: 0 } }) => {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -22,7 +22,7 @@ const FeedbackStats = ({ stats }) => {
       }}>
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h6" color="success.main">
-            👍 {stats.likes}
+            👍 {feedbackStats.likes}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Helpful
@@ -30,7 +30,7 @@ const FeedbackStats = ({ stats }) => {
         </Box>
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h6" color="error.main">
-            👎 {stats.dislikes}
+            👎 {feedbackStats.dislikes}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Not Helpful

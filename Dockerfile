@@ -37,13 +37,14 @@ WORKDIR /app
 # Install additional dependencies for node-gyp
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Copy package files first for better layer caching
 COPY fastapi_app/frontend/package*.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+# Install dependencies with clean npm cache
+RUN npm cache clean --force && \
+    npm install --legacy-peer-deps --production=false
 
-# Copy frontend code
+# Copy frontend source code
 COPY fastapi_app/frontend/ .
 
 # Create a non-root user

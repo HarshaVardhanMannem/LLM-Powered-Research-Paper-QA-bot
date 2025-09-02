@@ -1,0 +1,20 @@
+name: Super Linter
+on: push
+jobs:
+  super-linter:
+    name: Lint Code Base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Super Linter
+        uses: github/super-linter@v5
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_MARKDOWN: false
+          VALIDATE_CSS: false
+          VALIDATE_HTML: false
+          VALIDATE_NATURAL_LANGUAGE: false  # This disables textlint
+          FILTER_REGEX_EXCLUDE: '.*\.test\.js$'

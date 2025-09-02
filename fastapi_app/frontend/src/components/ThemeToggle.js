@@ -1,24 +1,24 @@
-import React from 'react';
+import React from 'react'
 import {
   IconButton,
   Tooltip,
   useTheme,
-  Box,
-} from '@mui/material';
+  Box
+} from '@mui/material'
 import {
   Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
-} from '@mui/icons-material';
+  Brightness7 as LightModeIcon
+} from '@mui/icons-material'
 
 const ThemeToggle = ({ onToggle }) => {
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
 
   return (
     <Tooltip title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`} arrow>
       <IconButton
         onClick={onToggle}
-        color="inherit"
+        color='inherit'
         sx={{
           p: 1.5,
           borderRadius: 2,
@@ -40,7 +40,7 @@ const ThemeToggle = ({ onToggle }) => {
               ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
               : 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
             opacity: 0,
-            transition: 'opacity 0.3s ease-in-out',
+            transition: 'opacity 0.3s ease-in-out'
           },
           '&:hover': {
             transform: 'scale(1.1) rotate(15deg)',
@@ -51,12 +51,12 @@ const ThemeToggle = ({ onToggle }) => {
               ? '0 4px 12px rgba(255, 255, 255, 0.2)'
               : '0 4px 12px rgba(99, 102, 241, 0.3)',
             '&::before': {
-              opacity: 1,
-            },
+              opacity: 1
+            }
           },
           '&:active': {
-            transform: 'scale(0.95)',
-          },
+            transform: 'scale(0.95)'
+          }
         }}
       >
         <Box
@@ -67,15 +67,15 @@ const ThemeToggle = ({ onToggle }) => {
             '& .MuiSvgIcon-root': {
               fontSize: 20,
               color: isDarkMode ? '#fbbf24' : '#6366f1',
-              filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
-            },
+              filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
+            }
           }}
         >
           {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
         </Box>
       </IconButton>
     </Tooltip>
-  );
-};
+  )
+}
 
-export default ThemeToggle; 
+export default ThemeToggle

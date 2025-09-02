@@ -1,23 +1,23 @@
 // src/components/Header.js
-import React from 'react';
+import React from 'react'
 import {
   AppBar,
   Toolbar,
   Typography,
   IconButton,
   Box,
-  useTheme,
-} from '@mui/material';
+  useTheme
+} from '@mui/material'
 import {
-  Menu as MenuIcon,
-} from '@mui/icons-material';
+  Menu as MenuIcon
+} from '@mui/icons-material'
 
 const Header = ({ onMenuClick, rightContent }) => {
-  const theme = useTheme();
-  
+  const theme = useTheme()
+
   return (
     <AppBar
-      position="fixed"
+      position='fixed'
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
         background: theme.palette.mode === 'dark'
@@ -28,35 +28,35 @@ const Header = ({ onMenuClick, rightContent }) => {
         boxShadow: theme.palette.mode === 'dark'
           ? '0 4px 20px rgba(0, 0, 0, 0.3)'
           : '0 4px 20px rgba(0, 0, 0, 0.08)',
-        color: theme.palette.text.primary,
+        color: theme.palette.text.primary
       }}
     >
       <Toolbar sx={{ minHeight: '72px !important' }}>
         <IconButton
-          color="inherit"
-          aria-label="open drawer"
-          edge="start"
+          color='inherit'
+          aria-label='open drawer'
+          edge='start'
           onClick={onMenuClick}
-          sx={{ 
+          sx={{
             mr: 2,
             p: 1.5,
             borderRadius: 2,
             transition: 'all 0.2s ease-in-out',
             '&:hover': {
-              background: theme.palette.mode === 'dark' 
-                ? 'rgba(255, 255, 255, 0.1)' 
+              background: theme.palette.mode === 'dark'
+                ? 'rgba(255, 255, 255, 0.1)'
                 : 'rgba(99, 102, 241, 0.1)',
-              transform: 'scale(1.05)',
-            },
+              transform: 'scale(1.05)'
+            }
           }}
         >
           <MenuIcon sx={{ fontSize: 24 }} />
         </IconButton>
-        
+
         <Typography
-          variant="h5"
+          variant='h5'
           noWrap
-          component="div"
+          component='div'
           sx={{
             flexGrow: 1,
             fontWeight: 700,
@@ -65,26 +65,26 @@ const Header = ({ onMenuClick, rightContent }) => {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
             letterSpacing: '-0.025em',
-            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            fontSize: { xs: '1.25rem', sm: '1.5rem' }
           }}
         >
           Research Papers QA
         </Typography>
 
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
           gap: 1,
           '& > *': {
-            transition: 'all 0.2s ease-in-out',
-          },
-        }}>
+            transition: 'all 0.2s ease-in-out'
+          }
+        }}
+        >
           {rightContent}
         </Box>
       </Toolbar>
     </AppBar>
-  );
-};
+  )
+}
 
-export default Header;
-
+export default Header

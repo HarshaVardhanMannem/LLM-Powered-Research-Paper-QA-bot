@@ -1,22 +1,20 @@
-import React from 'react';
+import React from 'react'
 import {
   Paper,
   Typography,
   Box,
-  LinearProgress,
-  Tooltip,
   Stack,
-  useTheme,
-} from '@mui/material';
+  useTheme
+} from '@mui/material'
 import {
   Article as ArticleIcon,
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon,
-  QuestionAnswer as QuestionAnswerIcon,
-} from '@mui/icons-material';
+  QuestionAnswer as QuestionAnswerIcon
+} from '@mui/icons-material'
 
 const StatCard = ({ title, value, icon, color, gradient }) => {
-  const theme = useTheme();
+  const theme = useTheme()
   return (
     <Paper
       elevation={0}
@@ -37,12 +35,12 @@ const StatCard = ({ title, value, icon, color, gradient }) => {
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           transform: 'translateY(-2px)',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
-        },
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)'
+        }
       }}
     >
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           p: 1,
           borderRadius: 2,
           background: theme.palette.mode === 'dark'
@@ -50,60 +48,61 @@ const StatCard = ({ title, value, icon, color, gradient }) => {
             : 'rgba(99, 102, 241, 0.1)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'center'
         }}
       >
-        <Box sx={{ 
-          color: color, 
-          fontSize: 20, 
-          display: 'flex', 
+        <Box sx={{
+          color,
+          fontSize: 20,
+          display: 'flex',
           alignItems: 'center',
-          filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
-        }}>
+          filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
+        }}
+        >
           {icon}
         </Box>
       </Box>
       <Box sx={{ flexGrow: 1 }}>
-        <Typography 
-          variant="subtitle2" 
-          sx={{ 
-            color: theme.palette.text.secondary, 
-            fontWeight: 500, 
+        <Typography
+          variant='subtitle2'
+          sx={{
+            color: theme.palette.text.secondary,
+            fontWeight: 500,
             fontSize: 12,
             textTransform: 'uppercase',
-            letterSpacing: '0.5px',
+            letterSpacing: '0.5px'
           }}
         >
           {title}
         </Typography>
-        <Typography 
-          variant="h5" 
-          component="div" 
-          sx={{ 
-            fontWeight: 700, 
-            fontSize: 20, 
+        <Typography
+          variant='h5'
+          component='div'
+          sx={{
+            fontWeight: 700,
+            fontSize: 20,
             lineHeight: 1,
             background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
+            backgroundClip: 'text'
           }}
         >
           {value}
         </Typography>
       </Box>
     </Paper>
-  );
-};
+  )
+}
 
 const PaperStats = ({ stats }) => {
-  const theme = useTheme();
+  const theme = useTheme()
   const {
     totalPapers = 0,
     totalQuestions = 0,
     positiveFeedback = 0,
-    negativeFeedback = 0,
-  } = stats;
+    negativeFeedback = 0
+  } = stats
 
   return (
     <Box
@@ -135,54 +134,54 @@ const PaperStats = ({ stats }) => {
           left: 0,
           right: 0,
           height: '1px',
-          background: 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.3) 50%, transparent 100%)',
-        },
+          background: 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.3) 50%, transparent 100%)'
+        }
       }}
     >
-      <Typography 
-        variant="h6" 
-        gutterBottom 
-        sx={{ 
-          fontWeight: 700, 
-          mb: 2, 
+      <Typography
+        variant='h6'
+        gutterBottom
+        sx={{
+          fontWeight: 700,
+          mb: 2,
           fontSize: 18,
           background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
-          letterSpacing: '-0.025em',
+          letterSpacing: '-0.025em'
         }}
       >
         Statistics
       </Typography>
       <Stack spacing={1} sx={{ width: '100%' }}>
         <StatCard
-          title="Total Papers"
+          title='Total Papers'
           value={totalPapers}
-          icon={<ArticleIcon fontSize="small" />}
-          color="#6366f1"
+          icon={<ArticleIcon fontSize='small' />}
+          color='#6366f1'
         />
         <StatCard
-          title="Questions Asked"
+          title='Questions Asked'
           value={totalQuestions}
-          icon={<QuestionAnswerIcon fontSize="small" />}
-          color="#3b82f6"
+          icon={<QuestionAnswerIcon fontSize='small' />}
+          color='#3b82f6'
         />
         <StatCard
-          title="Positive Feedback"
+          title='Positive Feedback'
           value={positiveFeedback}
-          icon={<ThumbUpIcon fontSize="small" />}
-          color="#10b981"
+          icon={<ThumbUpIcon fontSize='small' />}
+          color='#10b981'
         />
         <StatCard
-          title="Negative Feedback"
+          title='Negative Feedback'
           value={negativeFeedback}
-          icon={<ThumbDownIcon fontSize="small" />}
-          color="#ef4444"
+          icon={<ThumbDownIcon fontSize='small' />}
+          color='#ef4444'
         />
       </Stack>
     </Box>
-  );
-};
+  )
+}
 
-export default PaperStats; 
+export default PaperStats

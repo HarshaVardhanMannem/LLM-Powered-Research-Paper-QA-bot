@@ -1,11 +1,11 @@
 // src/components/ChatArea.js
-import React from 'react';
-import { Paper, CircularProgress, Box, useTheme } from '@mui/material';
-import ChatMessage from './ChatMessage';
+import React from 'react'
+import { Paper, CircularProgress, Box, useTheme } from '@mui/material'
+import ChatMessage from './ChatMessage'
 
 const ChatArea = ({ messages, loading, onFeedback }) => {
-  const theme = useTheme();
-  
+  const theme = useTheme()
+
   return (
     <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       <Paper
@@ -35,8 +35,8 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
             left: 0,
             right: 0,
             height: '1px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.3) 50%, transparent 100%)',
-          },
+            background: 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.3) 50%, transparent 100%)'
+          }
         }}
       >
         {messages.length === 0 && !loading && (
@@ -49,7 +49,7 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
               height: '100%',
               minHeight: 300,
               textAlign: 'center',
-              color: theme.palette.text.secondary,
+              color: theme.palette.text.secondary
             }}
           >
             <Box
@@ -66,27 +66,27 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
                 '@keyframes pulse': {
                   '0%': {
                     transform: 'scale(1)',
-                    opacity: 1,
+                    opacity: 1
                   },
                   '50%': {
                     transform: 'scale(1.05)',
-                    opacity: 0.8,
+                    opacity: 0.8
                   },
                   '100%': {
                     transform: 'scale(1)',
-                    opacity: 1,
-                  },
-                },
+                    opacity: 1
+                  }
+                }
               }}
             >
               <Box
-                component="span"
+                component='span'
                 sx={{
                   fontSize: 32,
                   background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  backgroundClip: 'text'
                 }}
               >
                 💬
@@ -94,14 +94,14 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
             </Box>
             <Box sx={{ mb: 1 }}>
               <Box
-                component="span"
+                component='span'
                 sx={{
                   fontSize: '1.25rem',
                   fontWeight: 600,
                   background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  backgroundClip: 'text'
                 }}
               >
                 Start a conversation
@@ -112,7 +112,7 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
             </Box>
           </Box>
         )}
-        
+
         {messages.map((message, index) => (
           <ChatMessage
             key={index}
@@ -122,15 +122,16 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
             onFeedback={onFeedback}
           />
         ))}
-        
+
         {loading && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
             alignItems: 'center',
             my: 3,
-            py: 2,
-          }}>
+            py: 2
+          }}
+          >
             <Box
               sx={{
                 display: 'flex',
@@ -141,24 +142,24 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
                 background: theme.palette.mode === 'dark'
                   ? 'rgba(255, 255, 255, 0.05)'
                   : 'rgba(99, 102, 241, 0.05)',
-                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(99, 102, 241, 0.1)'}`,
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(99, 102, 241, 0.1)'}`
               }}
             >
-              <CircularProgress 
-                size={24} 
-                sx={{ 
+              <CircularProgress
+                size={24}
+                sx={{
                   color: '#6366f1',
                   '& .MuiCircularProgress-circle': {
-                    strokeLinecap: 'round',
-                  },
-                }} 
+                    strokeLinecap: 'round'
+                  }
+                }}
               />
               <Box
-                component="span"
+                component='span'
                 sx={{
                   fontSize: '0.875rem',
                   color: theme.palette.text.secondary,
-                  fontWeight: 500,
+                  fontWeight: 500
                 }}
               >
                 Thinking...
@@ -168,8 +169,7 @@ const ChatArea = ({ messages, loading, onFeedback }) => {
         )}
       </Paper>
     </Box>
-  );
-};
+  )
+}
 
-export default ChatArea;
-
+export default ChatArea

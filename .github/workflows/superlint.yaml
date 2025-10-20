@@ -18,4 +18,5 @@ jobs:
           VALIDATE_HTML: false
           VALIDATE_NATURAL_LANGUAGE: false  # This disables textlint
           VALIDATE_DOCKERFILE_HADOLINT: false  # Disable Hadolint for Dockerfile
+          VALIDATE_PYTHON_ISORT: false  # Disable isort if not needed
         

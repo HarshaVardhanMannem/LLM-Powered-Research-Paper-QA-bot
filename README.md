@@ -4,7 +4,7 @@ A sophisticated AI-powered question-answering system that allows users to intera
 
 ## 🎥 Demo Video
 
-https://github.com/user-attachments/assets/ResearchpaperDemo.gif
+![Research Paper QA Bot Demo](fastapi_app/ResearchpaperDemo.gif)
 
 *Watch the demo to see the LLM-Powered Research Paper QA Bot in action!*
 
@@ -294,21 +294,21 @@ Our implementation follows a sophisticated Retrieval-Augmented Generation (RAG) 
 - NVIDIA API Key
 
 ### 1. Clone the Repository
-```bash
+   ```bash
 git clone https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot.git
 cd LLM-Powered-Research-Paper-QA-Bot
-```
+   ```
 
 ### 2. Environment Setup
 Create a `.env` file in the project root:
-```bash
-NVIDIA_API_KEY=your_nvidia_api_key_here
-```
+   ```bash
+   NVIDIA_API_KEY=your_nvidia_api_key_here
+   ```
 
 ### 3. Docker Deployment (Recommended)
-```bash
+   ```bash
 # Start all services
-docker-compose up --build
+   docker-compose up --build
 
 # Access the application
 # Frontend: http://localhost:3000
@@ -328,7 +328,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### Frontend Setup
-```bash
+   ```bash
 cd fastapi_app/frontend
 npm install
 npm start

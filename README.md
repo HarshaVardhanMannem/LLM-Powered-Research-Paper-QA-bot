@@ -1,313 +1,496 @@
-# LLM Powered Research Paper QA Bot
+# 🤖 LLM-Powered Research Paper QA Bot
 
-A sophisticated AI-powered application that allows users to ask questions about research papers and get intelligent responses based on the paper content. The system uses advanced NLP techniques including document embedding, vector search, and large language models to provide accurate and contextual answers.
+A sophisticated AI-powered question-answering system that allows users to interact with research papers through natural language queries. Built with FastAPI backend and React frontend, this application leverages NVIDIA's advanced language models for intelligent document analysis and retrieval.
 
-## 🚀 Features
+## 🎥 Demo Video
 
-- **Intelligent Q&A**: Ask questions about research papers and get AI-powered responses
-- **Document Upload**: Upload PDF research papers for analysis
-- **ArXiv Integration**: Automatically fetch and process papers from ArXiv
-- **Vector Search**: Advanced semantic search using FAISS vector database
-- **Conversation History**: Maintain context across multiple questions
-- **Feedback System**: Rate responses to improve system performance
-- **Modern UI**: Clean, responsive interface with dark/light mode
-- **Real-time Processing**: Fast response times with optimized retrieval
+https://github.com/user-attachments/assets/ResearchpaperDemo.gif
+
+*Watch the demo to see the LLM-Powered Research Paper QA Bot in action!*
+
+## ✨ Key Features
+
+### 🔍 **Intelligent Document Processing**
+- **arXiv Paper Integration**: Automatically loads and processes research papers from arXiv
+- **PDF Upload Support**: Upload and analyze custom research papers
+- **Smart Chunking**: Advanced text segmentation with configurable chunk sizes and overlap
+- **Vector Embeddings**: NVIDIA embedding models for semantic search capabilities
+
+### 💬 **Advanced Q&A System**
+- **Natural Language Queries**: Ask questions about papers in plain English
+- **Context-Aware Responses**: AI responses based on retrieved document chunks
+- **Conversation Memory**: Maintains chat history for better context
+- **Source Citation**: Responses include references to specific paper sections
+
+### 🎨 **Modern Web Interface**
+- **Responsive Design**: Beautiful, mobile-friendly React interface
+- **Dark/Light Theme**: Toggle between themes for comfortable reading
+- **Real-time Chat**: Interactive chat interface with message history
+- **Paper Management**: View, select, and manage multiple research papers
+
+### 📊 **Analytics & Feedback**
+- **User Feedback System**: Like/dislike responses to improve quality
+- **Paper Statistics**: View paper metadata, chunk counts, and processing info
+- **Usage Analytics**: Track interaction patterns and popular queries
+- **Performance Metrics**: Monitor system performance and response quality
+
+### 🚀 **Developer Features**
+- **RESTful API**: Complete FastAPI backend with comprehensive endpoints
+- **Docker Support**: Containerized deployment with docker-compose
+- **Code Quality**: Automated linting with Black, flake8, and isort
+- **CI/CD Pipeline**: GitHub Actions for automated testing and deployment
 
 ## 🏗️ Architecture
 
-The application consists of two main components:
+### System Overview
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React Frontend │    │  FastAPI Backend │    │  NVIDIA AI APIs │
+│                 │    │                 │    │                 │
+│ • Chat Interface│◄──►│ • Document Load │◄──►│ • Mixtral LLM   │
+│ • Paper Browser │    │ • Vector Search │    │ • Embeddings    │
+│ • Theme Toggle  │    │ • Feedback Store│    │ • Text Gen      │
+│ • Responsive UI │    │ • RESTful API   │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-### Backend (FastAPI)
-- **FastAPI** web framework for RESTful API
-- **LangChain** for LLM orchestration
-- **NVIDIA AI Endpoints** for LLM and embedding models
-- **FAISS** for vector similarity search
-- **PyMuPDF** for PDF processing
-- **ArXiv API** for paper fetching
+### 🔄 End-to-End RAG Pipeline Architecture
 
-### Frontend (React)
-- **React** with Material-UI components
-- **Axios** for API communication
-- **Real-time chat interface**
-- **File upload functionality**
-- **Responsive design**
+Our implementation follows a sophisticated Retrieval-Augmented Generation (RAG) pipeline that combines document processing, vector embeddings, semantic search, and generative AI to provide intelligent question-answering capabilities.
 
-## 📋 Prerequisites
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           RAG PIPELINE FLOW                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  📄 DOCUMENT INGESTION LAYER                                                    │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐             │
+│  │   arXiv Papers  │    │   PDF Upload    │    │   Custom Docs   │             │
+│  │                 │    │                 │    │                 │             │
+│  │ • Auto-fetch    │    │ • User Upload   │    │ • External APIs │             │
+│  │ • Metadata      │    │ • Validation    │    │ • File Import   │             │
+│  │ • Paper IDs     │    │ • Processing    │    │ • Bulk Import   │             │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘             │
+│           │                       │                       │                     │
+│           └───────────────────────┼───────────────────────┘                     │
+│                                   ▼                                             │
+│  🔧 DOCUMENT PROCESSING LAYER                                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                Document Preprocessing                           │             │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │             │
+│  │  │   PDF Parse │  │ Text Clean  │  │ Metadata    │            │             │
+│  │  │             │  │             │  │ Extraction  │            │             │
+│  │  │ • PyMuPDF   │  │ • Format    │  │ • Title     │            │             │
+│  │  │ • Text      │  │ • Cleanup   │  │ • Authors   │            │             │
+│  │  │ • Images    │  │ • Encoding  │  │ • Abstract  │            │             │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘            │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  ✂️  TEXT CHUNKING LAYER                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │              Recursive Character Text Splitter                  │             │
+│  │                                                                 │             │
+│  │  • Chunk Size: 1000 characters                                  │             │
+│  │  • Overlap: 100 characters                                      │             │
+│  │  • Separators: ["\n\n", "\n", ".", ";", ",", " "]              │             │
+│  │  • Min Length: 200 characters                                   │             │
+│  │  • Metadata Preservation                                        │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  🧠 EMBEDDING GENERATION LAYER                                                 │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                   NVIDIA Embeddings                             │             │
+│  │                                                                 │             │
+│  │  Model: nvidia/nv-embed-v1                                      │             │
+│  │  • 1024-dimensional vectors                                     │             │
+│  │  • Semantic similarity encoding                                 │             │
+│  │  • Batch processing support                                     │             │
+│  │  • Truncation handling                                          │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  🗄️  VECTOR STORAGE LAYER                                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                      FAISS Vector Store                         │             │
+│  │                                                                 │             │
+│  │  • Document Store (Paper Content)                              │             │
+│  │  • Conversation Store (Chat History)                           │             │
+│  │  • Metadata Store (Paper Information)                          │             │
+│  │  • Similarity Search Index                                     │             │
+│  │  • Aggregated Vector Collections                               │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  🔍 RETRIEVAL LAYER                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                    Semantic Search                              │             │
+│  │                                                                 │             │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │             │
+│  │  │ Document    │  │ Conversation│  │ Metadata    │            │             │
+│  │  │ Retrieval   │  │ Retrieval   │  │ Retrieval   │            │             │
+│  │  │             │  │             │  │             │            │             │
+│  │  │ • Top-k     │  │ • Chat      │  │ • Paper     │            │             │
+│  │  │ • Relevance │  │ • History   │  │ • Info      │            │             │
+│  │  │ • Context   │  │ • Context   │  │ • Stats     │            │             │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘            │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  🎯 CONTEXT AGGREGATION LAYER                                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                Context Reordering & Aggregation                │             │
+│  │                                                                 │             │
+│  │  • Relevance Scoring                                            │             │
+│  │  • Context Prioritization                                       │             │
+│  │  • Document Reordering                                          │             │
+│  │  • Metadata Integration                                         │             │
+│  │  • Source Citation Preparation                                  │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  🤖 GENERATION LAYER                                                           │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                   Prompt Engineering                            │             │
+│  │  ┌─────────────────────────────────────────────────────────┐   │             │
+│  │  │              System Message Template                     │   │             │
+│  │  │                                                         │   │             │
+│  │  │  "You are a document chatbot. Help the user as they     │   │             │
+│  │  │   ask questions about documents.                         │   │             │
+│  │  │                                                         │   │             │
+│  │  │   User message: {input}                                 │   │             │
+│  │  │   Conversation History: {history}                       │   │             │
+│  │  │   Document Context: {context}                           │   │             │
+│  │  │                                                         │   │             │
+│  │  │   (Answer only from retrieval. Cite sources. Be         │   │             │
+│  │  │    conversational.)"                                    │   │             │
+│  │  └─────────────────────────────────────────────────────────┘   │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  🧠 LLM GENERATION LAYER                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                   NVIDIA Mixtral LLM                           │             │
+│  │                                                                 │             │
+│  │  Model: mistralai/mixtral-8x22b-instruct-v0.1                 │             │
+│  │  • 22B parameter model                                         │             │
+│  │  • Instruction-tuned                                           │             │
+│  │  • Context-aware responses                                     │             │
+│  │  • Source citation capability                                  │             │
+│  │  • Conversational output                                       │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  📤 RESPONSE DELIVERY LAYER                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                    Response Processing                          │             │
+│  │                                                                 │             │
+│  │  • Content Generation                                           │             │
+│  │  • Source Attribution                                           │             │
+│  │  • Paper Information                                            │             │
+│  │  • JSON Serialization                                           │             │
+│  │  • Error Handling                                               │             │
+│  │  • Logging & Analytics                                          │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+│                                   ▼                                             │
+│  💬 USER INTERFACE LAYER                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐             │
+│  │                    React Frontend                               │             │
+│  │                                                                 │             │
+│  │  • Real-time Chat Interface                                    │             │
+│  │  • Paper Browser & Management                                  │             │
+│  │  • Response Display with Citations                             │             │
+│  │  • Feedback Collection                                         │             │
+│  │  • Theme & UI Controls                                         │             │
+│  └─────────────────────────────────────────────────────────────────┘             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
 
-Before running the application, ensure you have:
+### 🔄 RAG Pipeline Flow Details
 
-- **Python 3.9+** installed
-- **Node.js 18+** installed
-- **NVIDIA API Key** (for LLM and embedding models)
-- **Git** for cloning the repository
+#### **1. Document Ingestion Phase**
+- **arXiv Integration**: Automatically fetches research papers using paper IDs
+- **PDF Upload**: Users can upload custom PDF documents
+- **Validation**: File type and content validation
+- **Metadata Extraction**: Title, authors, abstract, publication info
 
-## 🛠️ Installation & Setup
+#### **2. Document Processing Phase**
+- **PDF Parsing**: Extracts text using PyMuPDF
+- **Text Cleaning**: Removes formatting artifacts, normalizes encoding
+- **Content Structure**: Preserves document hierarchy and sections
 
-### Option 1: Local Development Setup
+#### **3. Text Chunking Phase**
+- **Recursive Splitting**: Intelligent text segmentation
+- **Overlap Strategy**: Maintains context continuity between chunks
+- **Metadata Preservation**: Each chunk retains source information
+- **Size Optimization**: Balances context length with processing efficiency
+
+#### **4. Embedding Generation Phase**
+- **NVIDIA Embeddings**: High-quality semantic vector generation
+- **Batch Processing**: Efficient handling of large document sets
+- **Vector Dimensions**: 1024-dimensional embeddings for rich representation
+
+#### **5. Vector Storage Phase**
+- **FAISS Integration**: Fast approximate nearest neighbor search
+- **Multiple Stores**: Separate indices for documents, conversations, metadata
+- **Aggregation**: Combines multiple vector collections
+- **Persistence**: Maintains searchable index across sessions
+
+#### **6. Retrieval Phase**
+- **Semantic Search**: Finds relevant content based on query meaning
+- **Multi-Source Retrieval**: Searches documents, chat history, and metadata
+- **Relevance Scoring**: Ranks results by semantic similarity
+- **Context Window**: Retrieves optimal number of relevant chunks
+
+#### **7. Context Aggregation Phase**
+- **Smart Reordering**: Prioritizes most relevant content
+- **Context Integration**: Combines document and conversation context
+- **Source Preparation**: Prepares citation information
+- **Length Optimization**: Balances context richness with token limits
+
+#### **8. Generation Phase**
+- **Prompt Engineering**: Structured prompts with context injection
+- **LLM Processing**: NVIDIA Mixtral model generates responses
+- **Instruction Following**: Adheres to conversation and citation requirements
+- **Quality Assurance**: Ensures responses are grounded in retrieved content
+
+#### **9. Response Delivery Phase**
+- **Content Formatting**: Structures response for frontend consumption
+- **Source Attribution**: Includes paper references and citations
+- **Error Handling**: Graceful failure management
+- **Analytics**: Tracks usage patterns and response quality
+
+### 🎯 Key RAG Pipeline Features
+
+- **Dual Retrieval**: Searches both document content and conversation history
+- **Context Preservation**: Maintains conversation context across interactions
+- **Source Citation**: Always provides references to source materials
+- **Real-time Processing**: Handles queries with sub-second response times
+- **Scalable Architecture**: Supports multiple papers and concurrent users
+- **Quality Assurance**: Validates responses against source documents
+
+## 🛠️ Technology Stack
+
+### Backend
+- **FastAPI**: Modern, fast web framework for building APIs
+- **LangChain**: Framework for developing applications with LLMs
+- **FAISS**: Efficient similarity search and clustering
+- **NVIDIA AI Endpoints**: Advanced language models and embeddings
+- **PyMuPDF**: PDF document processing
+- **SQLite**: Local data storage for feedback and metadata
+
+### Frontend
+- **React 18**: Modern JavaScript library for building user interfaces
+- **Material-UI**: Comprehensive React component library
+- **Axios**: HTTP client for API communication
+- **React Markdown**: Markdown rendering for AI responses
+
+### DevOps & Quality
+- **Docker**: Containerization for consistent deployment
+- **GitHub Actions**: CI/CD pipeline with automated linting
+- **Black**: Python code formatter
+- **flake8**: Python style guide enforcement
+- **isort**: Import statement sorting
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- Docker & Docker Compose
+- NVIDIA API Key
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot.git
+cd LLM-Powered-Research-Paper-QA-Bot
+```
+
+### 2. Environment Setup
+Create a `.env` file in the project root:
+```bash
+NVIDIA_API_KEY=your_nvidia_api_key_here
+```
+
+### 3. Docker Deployment (Recommended)
+```bash
+# Start all services
+docker-compose up --build
+
+# Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000
+# API Documentation: http://localhost:8000/docs
+```
+
+### 4. Manual Setup (Development)
 
 #### Backend Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd LLM_Powered_Research_Paper_QA_Bot(FASTAPI)
-   ```
-
-2. **Navigate to backend directory**
-   ```bash
-   cd fastapi_app/backend
-   ```
-
-3. **Create and activate virtual environment**
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate
-
-   # macOS/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-4. **Install Python dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-5. **Set up environment variables**
-   Create a `.env` file in the backend directory:
-   ```bash
-   NVIDIA_API_KEY=your_nvidia_api_key_here
-   ```
-
-6. **Run the backend server**
-   ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-   The backend will be available at `http://localhost:8000`
+```bash
+cd fastapi_app/backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
 #### Frontend Setup
+```bash
+cd fastapi_app/frontend
+npm install
+npm start
+```
 
-1. **Navigate to frontend directory**
-   ```bash
-   cd fastapi_app/frontend
-   ```
+## 📖 Usage Guide
 
-2. **Install Node.js dependencies**
-   ```bash
-   npm install
-   ```
+### 1. **Paper Selection**
+- Browse available research papers in the sidebar
+- Upload custom PDF documents
+- View paper details and metadata
 
-3. **Start the frontend development server**
-   ```bash
-   npm start
-   ```
+### 2. **Asking Questions**
+- Type natural language questions about the papers
+- Get AI-powered responses with source citations
+- View conversation history
 
-   The frontend will be available at `http://localhost:3000`
+### 3. **Feedback System**
+- Like or dislike responses to improve quality
+- View feedback statistics
+- Help train the system for better responses
 
-### Option 2: Docker Setup
-
-#### Using Docker Compose (Recommended)
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd LLM_Powered_Research_Paper_QA_Bot(FASTAPI)
-   ```
-
-2. **Set up environment variables**
-   Create a `.env` file in the root directory:
-   ```bash
-   NVIDIA_API_KEY=your_nvidia_api_key_here
-   ```
-
-3. **Build and run with Docker Compose**
-   ```bash
-   docker-compose up --build
-   ```
-
-   This will start both backend and frontend services:
-   - Backend: `http://localhost:8000`
-   - Frontend: `http://localhost:3000`
-
-#### Using Individual Dockerfiles
-
-1. **Build and run backend**
-   ```bash
-   # Build backend image
-   docker build --target backend -t research-qa-backend .
-
-   # Run backend container
-   docker run -p 8000:8000 -e NVIDIA_API_KEY=your_key research-qa-backend
-   ```
-
-2. **Build and run frontend**
-   ```bash
-   # Build frontend image
-   docker build --target frontend -t research-qa-frontend .
-
-   # Run frontend container
-   docker run -p 3000:3000 research-qa-frontend
-   ```
+### 4. **Paper Management**
+- Switch between different papers
+- View paper statistics and processing info
+- Manage uploaded documents
 
 ## 🔧 Configuration
 
-### Backend Configuration
+### Backend Configuration (`fastapi_app/backend/config/settings.py`)
 
-The main configuration is in `fastapi_app/backend/config/settings.py`:
+```python
+# AI Models
+EMBEDDING_MODEL = "nvidia/nv-embed-v1"
+LLM_MODEL = "mistralai/mixtral-8x22b-instruct-v0.1"
 
-- **LLM Model**: `mistralai/mixtral-8x22b-instruct-v0.1`
-- **Embedding Model**: `nvidia/nv-embed-v1`
-- **Chunk Size**: 1000 characters
-- **Chunk Overlap**: 100 characters
-- **Pre-loaded Papers**: Configured ArXiv paper IDs
+# Document Processing
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 100
+MIN_CHUNK_LENGTH = 200
+
+# Paper Sources
+PAPER_IDS = [
+    "1706.03762",  # Attention Is All You Need
+    # Add more arXiv paper IDs
+]
+```
 
 ### Frontend Configuration
+- API endpoint configuration in `src/App.js`
+- Theme customization in Material-UI theme provider
+- Component styling and layout adjustments
 
-The frontend connects to the backend API at `http://localhost:8000` by default. This can be modified in `fastapi_app/frontend/src/App.js`.
+## 📡 API Endpoints
 
-## 📖 Usage
+### Core Endpoints
+- `GET /papers` - List available papers
+- `POST /upload` - Upload PDF documents
+- `POST /chat` - Send chat messages
+- `GET /papers/{paper_id}/stats` - Get paper statistics
+- `POST /feedback` - Submit user feedback
 
-### Getting Started
+### Documentation
+- Interactive API docs: `http://localhost:8000/docs`
+- ReDoc documentation: `http://localhost:8000/redoc`
 
-1. **Access the application** at `http://localhost:3000`
+## 🧪 Development
 
-2. **View loaded papers** in the sidebar to see available research papers
-
-3. **Ask questions** in the chat interface about any of the loaded papers
-
-4. **Upload new papers** using the upload functionality in the sidebar
-
-5. **Add papers from ArXiv** by entering the paper ID
-
-### Features
-
-- **Chat Interface**: Type questions and get AI-powered responses
-- **Paper Management**: View, upload, and manage research papers
-- **Search**: Search through papers and chat history
-- **Feedback**: Rate responses to help improve the system
-- **Theme Toggle**: Switch between light and dark modes
-
-## 🔍 API Endpoints
-
-### Backend API (FastAPI)
-
-- `GET /` - Health check
-- `GET /papers` - Get list of loaded papers
-- `POST /chat` - Send a question and get response
-- `POST /papers/add` - Add a paper from ArXiv
-- `POST /papers/upload` - Upload a PDF paper
-- `POST /feedback` - Submit feedback on responses
-- `GET /feedback/stats` - Get feedback statistics
-
-## 🚀 Deployment
-
-### Production Deployment
-
-For production deployment, consider:
-
-1. **Environment Variables**: Set proper production environment variables
-2. **Database**: Use a production database instead of in-memory storage
-3. **Security**: Implement proper authentication and authorization
-4. **Monitoring**: Add logging and monitoring solutions
-5. **SSL**: Configure HTTPS for secure communication
-
-### Docker Production
-
+### Code Quality
 ```bash
-# Build production images
-docker build --target backend -t research-qa-backend:prod .
-docker build --target frontend -t research-qa-frontend:prod .
-
-# Run with production settings
-docker run -d -p 8000:8000 -e NVIDIA_API_KEY=your_key research-qa-backend:prod
-docker run -d -p 3000:3000 research-qa-frontend:prod
-```
-
-## 🧪 Testing
-
-### Backend Testing
-
-```bash
+# Run linting
 cd fastapi_app/backend
-python -m pytest
+python -m black .
+python -m flake8 .
+python -m isort .
+
+# Run tests
+python -m pytest tests/
 ```
 
-### Frontend Testing
-
-```bash
-cd fastapi_app/frontend
-npm test
-```
+### Adding New Features
+1. **Backend**: Add new endpoints in `main.py`
+2. **Frontend**: Create components in `src/components/`
+3. **Styling**: Use Material-UI theme system
+4. **Testing**: Add tests in `tests/` directory
 
 ## 📁 Project Structure
 
 ```
-LLM_Powered_Research_Paper_QA_Bot(FASTAPI)/
 ├── fastapi_app/
 │   ├── backend/
-│   │   ├── config/
-│   │   │   └── settings.py          # Configuration settings
 │   │   ├── src/
-│   │   │   ├── data/
-│   │   │   │   └── document_loader.py # Document loading utilities
-│   │   │   ├── embedding/
-│   │   │   │   └── embeddings.py    # Embedding model setup
-│   │   │   ├── prompts/
-│   │   │   │   └── chat_prompts.py  # Chat prompt templates
-│   │   │   ├── retrieval/
-│   │   │   │   └── vector_store.py  # Vector store operations
-│   │   │   └── utils/
-│   │   │       ├── feedback_store.py # Feedback storage
-│   │   │       └── helpers.py       # Utility functions
-│   │   ├── main.py                  # FastAPI application
-│   │   └── requirements.txt         # Python dependencies
+│   │   │   ├── data/          # Document loading and processing
+│   │   │   ├── embedding/     # Vector embeddings
+│   │   │   ├── prompts/       # Chat prompt templates
+│   │   │   ├── retrieval/     # Vector search and retrieval
+│   │   │   └── utils/         # Utility functions
+│   │   ├── config/            # Configuration settings
+│   │   ├── tests/             # Test files
+│   │   └── main.py            # FastAPI application
 │   └── frontend/
 │       ├── src/
-│       │   ├── components/          # React components
-│       │   ├── hooks/              # Custom React hooks
-│       │   └── App.js              # Main React application
-│       └── package.json            # Node.js dependencies
-├── Dockerfile                      # Multi-stage Docker build
-├── docker-compose.yml              # Docker Compose configuration
-└── README.md                       # This file
+│       │   ├── components/    # React components
+│       │   ├── hooks/         # Custom React hooks
+│       │   └── App.js         # Main application
+│       └── public/            # Static assets
+├── .github/
+│   └── workflows/             # CI/CD configuration
+├── docker-compose.yml         # Docker services
+├── Dockerfile                 # Multi-stage Docker build
+└── README.md                  # This file
 ```
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
+### Development Guidelines
+- Follow PEP 8 for Python code
+- Use TypeScript for React components
+- Write tests for new features
+- Update documentation as needed
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📄 License
 
-## 🆘 Troubleshooting
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Common Issues
+## 🙏 Acknowledgments
 
-1. **Backend not starting**: Check if NVIDIA API key is set correctly
-2. **Frontend not connecting**: Ensure backend is running on port 8000
-3. **Docker build fails**: Check if all dependencies are properly specified
-4. **Memory issues**: Consider reducing chunk size or using smaller models
+- **NVIDIA**: For providing advanced AI models and embeddings
+- **LangChain**: For the comprehensive LLM framework
+- **FastAPI**: For the excellent Python web framework
+- **React & Material-UI**: For the modern frontend components
+- **arXiv**: For providing access to research papers
 
-### Getting Help
+## 📞 Support
 
-- Check the logs for detailed error messages
-- Ensure all prerequisites are installed
-- Verify environment variables are set correctly
-- Check network connectivity for API calls
+- **Issues**: [GitHub Issues](https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot/discussions)
+- **Documentation**: [Wiki](https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot/wiki)
 
-## 🔮 Future Enhancements
+## 🔮 Roadmap
 
-- [ ] User authentication and authorization
-- [ ] Support for more document formats
-- [ ] Advanced search filters
-- [ ] Export functionality
-- [ ] Multi-language support
-- [ ] Real-time collaboration features
-- [ ] Advanced analytics and insights 
+### Upcoming Features
+- [ ] **Multi-language Support**: Support for papers in different languages
+- [ ] **Advanced Analytics**: Detailed usage analytics and insights
+- [ ] **Paper Recommendations**: AI-powered paper suggestions
+- [ ] **Export Functionality**: Export conversations and analysis
+- [ ] **Collaborative Features**: Share papers and discussions
+- [ ] **Mobile App**: Native mobile application
+- [ ] **Plugin System**: Extensible plugin architecture
+
+### Performance Improvements
+- [ ] **Caching System**: Redis-based response caching
+- [ ] **Load Balancing**: Horizontal scaling support
+- [ ] **Database Optimization**: PostgreSQL migration
+- [ ] **CDN Integration**: Static asset optimization
+
+---
+
+**Built with ❤️ for the research community**

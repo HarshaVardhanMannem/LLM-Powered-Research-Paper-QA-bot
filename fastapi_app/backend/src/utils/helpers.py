@@ -1,8 +1,8 @@
 """Utility functions for the QA system."""
 
 from functools import partial
+
 from langchain.schema.runnable import RunnableLambda
-from operator import itemgetter
 
 
 def print_runnable(preface=""):

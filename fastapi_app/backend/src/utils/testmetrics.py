@@ -1,7 +1,8 @@
+from typing import Dict, List, Union
+
 import nltk
-from rouge_score import rouge_scorer
-from typing import Dict, List, Union, Tuple
 import numpy as np
+from rouge_score import rouge_scorer
 
 # Download required NLTK data
 try:

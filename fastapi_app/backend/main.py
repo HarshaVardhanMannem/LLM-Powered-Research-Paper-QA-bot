@@ -1,17 +1,15 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
-import os
-import sys
-import logging
-from pathlib import Path
-import shutil
-from datetime import datetime
-import uuid
-import fitz  # PyMuPDF
-from langchain.schema import Document
 import hashlib
+import logging
+import sys
+import uuid
+from pathlib import Path
+from typing import List
+
+import fitz  # PyMuPDF
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from langchain.schema import Document
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(
@@ -25,27 +23,22 @@ sys.path.append(root_dir)
 logger.debug(f"Added root directory to Python path: {root_dir}")
 
 from dotenv import load_dotenv
-from src.utils.feedback_store import FeedbackStore
-from src.data.document_loader import (
-    load_arxiv_documents,
-    preprocess_documents,
-    create_document_chunks,
-    create_metadata_chunks,
-    load_single_arxiv_document,
-    create_text_splitter,
-)
-from src.embedding.embeddings import get_embedder
-from src.retrieval.vector_store import (
-    create_default_faiss,
-    create_vector_stores,
-    aggregate_vector_stores,
-    reorder_documents,
-    docs_to_string,
-    add_documents_to_vector_store,
-)
-from src.prompts.chat_prompts import create_chat_prompt
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
 from config.settings import LLM_MODEL, PAPER_IDS
+from src.data.document_loader import (create_document_chunks,
+                                      create_metadata_chunks,
+                                      create_text_splitter,
+                                      load_arxiv_documents,
+                                      load_single_arxiv_document,
+                                      preprocess_documents)
+from src.prompts.chat_prompts import create_chat_prompt
+from src.retrieval.vector_store import (add_documents_to_vector_store,
+                                        aggregate_vector_stores,
+                                        create_default_faiss,
+                                        create_vector_stores, docs_to_string,
+                                        reorder_documents)
+from src.utils.feedback_store import FeedbackStore
 
 # Load environment variables
 load_dotenv()

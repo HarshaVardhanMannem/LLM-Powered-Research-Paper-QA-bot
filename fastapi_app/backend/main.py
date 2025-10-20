@@ -5,14 +5,6 @@ import uuid
 from pathlib import Path
 from typing import List
 
-import fitz  # PyMuPDF
-from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from langchain.schema import Document
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from pydantic import BaseModel
-
 from config.settings import LLM_MODEL, PAPER_IDS
 from src.data.document_loader import (
     create_document_chunks,
@@ -32,6 +24,14 @@ from src.retrieval.vector_store import (
     reorder_documents,
 )
 from src.utils.feedback_store import FeedbackStore
+
+import fitz  # PyMuPDF
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from langchain.schema import Document
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(

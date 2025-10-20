@@ -1,8 +1,8 @@
 """Embedding utilities for the QA system."""
 
-from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
-
 from config.settings import EMBEDDING_MODEL
+
+from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
 
 def get_embedder():

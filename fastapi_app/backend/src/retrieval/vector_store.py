@@ -1,8 +1,8 @@
 """Vector store creation and management utilities."""
 
-from langchain.vectorstores import FAISS
-
 from src.embedding.embeddings import get_embedder
+
+from langchain.vectorstores import FAISS
 
 
 def create_default_faiss():

@@ -1,8 +1,8 @@
 """Chat prompt templates for the QA system."""
 
-from langchain.prompts import ChatPromptTemplate
-
 from config.settings import SYSTEM_MESSAGE
+
+from langchain.prompts import ChatPromptTemplate
 
 
 def create_chat_prompt():

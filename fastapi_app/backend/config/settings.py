@@ -22,7 +22,8 @@ PAPER_IDS = [
 ]
 
 # System message for the chatbot
-SYSTEM_MESSAGE = """You are a document chatbot. Help the user as they ask questions about documents.
+SYSTEM_MESSAGE = """You are a document chatbot. Help the user as they ask questions \
+about documents.
 User messaged just asked: {input}
 
 From this, we have retrieved the following potentially-useful info:
@@ -32,4 +33,5 @@ Conversation History Retrieval:
 Document Retrieval:
 {context}
 
-(Answer only from retrieval. Only cite sources that are used. Make your response conversational.)"""
+(Answer only from retrieval. Only cite sources that are used. Make your response \
+conversational.)"""

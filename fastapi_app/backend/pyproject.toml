@@ -12,10 +12,17 @@ extend-exclude = '''
   | \.tox
   | \.venv
   | venv
+  | env
   | _build
   | buck-out
   | build
   | dist
+  | __pycache__
+  | \.pytest_cache
+  | \.coverage
+  | htmlcov
+  | node_modules
+  | \.DS_Store
 )/
 '''
 
@@ -33,3 +40,14 @@ import_heading_stdlib = "Standard library imports"
 import_heading_firstparty = "Local application imports"
 import_heading_thirdparty = "Third party imports"
 import_heading_localfolder = "Local folder imports"
+skip_glob = [
+    ".venv/*",
+    "venv/*",
+    "env/*",
+    ".mypy_cache/*",
+    ".pytest_cache/*",
+    "__pycache__/*",
+    "build/*",
+    "dist/*",
+    "*.egg-info/*"
+]

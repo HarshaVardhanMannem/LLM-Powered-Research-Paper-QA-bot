@@ -323,11 +323,7 @@ def add_paper_to_resources(paper_id, resources):
         new_doc_chunks = create_document_chunks(new_doc)
 
         # Validate chunks
-        if (
-            not new_doc_chunks
-            or not new_doc_chunks[0]
-            or len(new_doc_chunks[0]) == 0
-        ):
+        if not new_doc_chunks or not new_doc_chunks[0] or len(new_doc_chunks[0]) == 0:
             return (
                 False,
                 f"Paper loaded but no valid content chunks were created for: "

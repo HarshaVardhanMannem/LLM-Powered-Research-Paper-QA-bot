@@ -17,4 +17,5 @@ jobs:
           VALIDATE_CSS: false
           VALIDATE_HTML: false
           VALIDATE_NATURAL_LANGUAGE: false  # This disables textlint
+          VALIDATE_DOCKERFILE_HADOLINT: false  # Disable Hadolint for Dockerfile
         

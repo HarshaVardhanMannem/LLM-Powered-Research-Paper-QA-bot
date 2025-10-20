@@ -6,7 +6,7 @@ LABEL maintainer="Research Paper QA Bot Team"
 LABEL description="Backend service for Research Paper QA Bot"
 LABEL version="1.0"
 
-# Set working directoryp
+# Set working directory
 WORKDIR /app
 
 # Copy requirements file first for better layer caching
@@ -15,10 +15,10 @@ COPY requirements.txt .
 # Install system dependencies and Python dependencies in one layer
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        build-essential \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+        build-essential && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire backend directory
 COPY fastapi_app/backend/ ./backend/

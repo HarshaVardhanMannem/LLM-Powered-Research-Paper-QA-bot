@@ -5,8 +5,13 @@ import json
 from langchain.document_loaders import ArxivLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from config.settings import (CHUNK_OVERLAP, CHUNK_SEPARATORS, CHUNK_SIZE,
-                             MIN_CHUNK_LENGTH, PAPER_IDS)
+from config.settings import (
+    CHUNK_OVERLAP,
+    CHUNK_SEPARATORS,
+    CHUNK_SIZE,
+    MIN_CHUNK_LENGTH,
+    PAPER_IDS,
+)
 
 
 def create_text_splitter():

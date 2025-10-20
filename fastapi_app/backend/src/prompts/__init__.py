@@ -1,2 +1,2 @@
 # src/prompts/__init__.py
-from .chat_prompts import *  # Import all public members of chat_prompts
+# This module contains chat prompt templates

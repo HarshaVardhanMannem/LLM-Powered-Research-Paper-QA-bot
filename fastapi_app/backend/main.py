@@ -6,10 +6,32 @@ from pathlib import Path
 from typing import List
 
 import fitz  # PyMuPDF
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.schema import Document
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from pydantic import BaseModel
+
+from config.settings import LLM_MODEL, PAPER_IDS
+from src.data.document_loader import (
+    create_document_chunks,
+    create_metadata_chunks,
+    create_text_splitter,
+    load_arxiv_documents,
+    load_single_arxiv_document,
+    preprocess_documents,
+)
+from src.prompts.chat_prompts import create_chat_prompt
+from src.retrieval.vector_store import (
+    add_documents_to_vector_store,
+    aggregate_vector_stores,
+    create_default_faiss,
+    create_vector_stores,
+    docs_to_string,
+    reorder_documents,
+)
+from src.utils.feedback_store import FeedbackStore
 
 # Configure logging
 logging.basicConfig(
@@ -21,24 +43,6 @@ logger = logging.getLogger(__name__)
 root_dir = str(Path(__file__).parent.parent.parent)
 sys.path.append(root_dir)
 logger.debug(f"Added root directory to Python path: {root_dir}")
-
-from dotenv import load_dotenv
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-
-from config.settings import LLM_MODEL, PAPER_IDS
-from src.data.document_loader import (create_document_chunks,
-                                      create_metadata_chunks,
-                                      create_text_splitter,
-                                      load_arxiv_documents,
-                                      load_single_arxiv_document,
-                                      preprocess_documents)
-from src.prompts.chat_prompts import create_chat_prompt
-from src.retrieval.vector_store import (add_documents_to_vector_store,
-                                        aggregate_vector_stores,
-                                        create_default_faiss,
-                                        create_vector_stores, docs_to_string,
-                                        reorder_documents)
-from src.utils.feedback_store import FeedbackStore
 
 # Load environment variables
 load_dotenv()
@@ -108,7 +112,8 @@ def initialize_resources():
 
         loaded_papers = []
         for paper_id, doc_chunks in zip(PAPER_IDS, docs_chunks):
-            # Use the paper_id from config, and get the title from the first chunk's metadata
+            # Use the paper_id from config, and get the title from the first chunk's
+            # metadata
             title = "Untitled"
             if doc_chunks and len(doc_chunks) > 0:
                 metadata = getattr(doc_chunks[0], "metadata", {})
@@ -229,7 +234,8 @@ async def upload_file(file: UploadFile = File(...)):
         if len(contents) > MAX_FILE_SIZE:
             raise HTTPException(
                 status_code=413,
-                detail=f"File size exceeds the limit of {MAX_FILE_SIZE / (1024*1024)}MB.",
+                detail=f"File size exceeds the limit of "
+                f"{MAX_FILE_SIZE / (1024*1024)}MB.",
             )
 
         # Generate content hash to check for duplicates
@@ -317,10 +323,15 @@ def add_paper_to_resources(paper_id, resources):
         new_doc_chunks = create_document_chunks(new_doc)
 
         # Validate chunks
-        if not new_doc_chunks or not new_doc_chunks[0] or len(new_doc_chunks[0]) == 0:
+        if (
+            not new_doc_chunks
+            or not new_doc_chunks[0]
+            or len(new_doc_chunks[0]) == 0
+        ):
             return (
                 False,
-                f"Paper loaded but no valid content chunks were created for: {paper_id}",
+                f"Paper loaded but no valid content chunks were created for: "
+                f"{paper_id}",
             )
 
         # Add to vector store

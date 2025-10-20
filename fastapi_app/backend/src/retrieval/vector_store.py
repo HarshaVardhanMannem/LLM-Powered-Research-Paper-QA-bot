@@ -58,8 +58,6 @@ def add_documents_to_vector_store(vector_store, docs_chunks):
     if not docs_chunks:
         return vector_store
 
-    embedder = get_embedder()
-
     # Create embeddings and add to store
     valid_chunks = [
         chunk

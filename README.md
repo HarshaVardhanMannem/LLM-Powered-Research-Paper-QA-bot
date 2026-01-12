@@ -43,161 +43,157 @@ A sophisticated AI-powered question-answering system that allows users to intera
 ## 🏗️ Architecture
 
 ### System Overview
+
+![System Architecture](fastapi_app/system_architecture.png)
+
+<details>
+<summary>View Mermaid Diagram Code</summary>
+
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        UI[React Application]
+        Chat[Chat Interface]
+        Papers[Paper Browser]
+        Theme[Theme Toggle]
+        
+        UI --> Chat
+        UI --> Papers
+        UI --> Theme
+    end
+    
+    subgraph "Backend Layer - FastAPI"
+        API[REST API Endpoints]
+        DocLoader[Document Loader]
+        VectorOps[Vector Operations]
+        FeedbackDB[(Feedback Store)]
+        
+        API --> DocLoader
+        API --> VectorOps
+        API --> FeedbackDB
+    end
+    
+    subgraph "Vector Storage Layer"
+        DocStore[(FAISS Document Store)]
+        ConvStore[(FAISS Conversation Store)]
+        MetaStore[(Metadata Store)]
+        
+        VectorOps --> DocStore
+        VectorOps --> ConvStore
+        VectorOps --> MetaStore
+    end
+    
+    subgraph "LLM Provider Layer - NVIDIA AI"
+        NVIDIA[NVIDIA AI Endpoints]
+        Embeddings[nv-embed-v1<br/>Embedding Model]
+        Mixtral[mixtral-8x22b-instruct<br/>Generation Model]
+        
+        NVIDIA --> Embeddings
+        NVIDIA --> Mixtral
+    end
+    
+    subgraph "Data Sources"
+        ArXiv[arXiv Papers]
+        PDFUpload[PDF Upload]
+    end
+    
+    UI -->|HTTP/REST| API
+    DocLoader -->|Fetch| ArXiv
+    DocLoader -->|Process| PDFUpload
+    VectorOps -->|Query Embeddings| Embeddings
+    VectorOps -->|Generate Response| Mixtral
+    
+    style UI fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style API fill:#50C878,stroke:#2E7D4E,color:#fff
+    style DocStore fill:#FF6B6B,stroke:#C92A2A,color:#fff
+    style ConvStore fill:#FF6B6B,stroke:#C92A2A,color:#fff
+    style MetaStore fill:#FF6B6B,stroke:#C92A2A,color:#fff
+    style NVIDIA fill:#76B900,stroke:#4A7300,color:#fff
+    style Embeddings fill:#D1FAE5,stroke:#10B981,color:#000
+    style Mixtral fill:#D1FAE5,stroke:#10B981,color:#000
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React Frontend │    │  FastAPI Backend │    │  NVIDIA AI APIs │
-│                 │    │                 │    │                 │
-│ • Chat Interface│◄──►│ • Document Load │◄──►│ • Mixtral LLM   │
-│ • Paper Browser │    │ • Vector Search │    │ • Embeddings    │
-│ • Theme Toggle  │    │ • Feedback Store│    │ • Text Gen      │
-│ • Responsive UI │    │ • RESTful API   │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+</details>
 
 ### 🔄 End-to-End RAG Pipeline Architecture
 
 Our implementation follows a sophisticated Retrieval-Augmented Generation (RAG) pipeline that combines document processing, vector embeddings, semantic search, and generative AI to provide intelligent question-answering capabilities.
 
+![RAG Pipeline Flowchart](fastapi_app/rag_pipeline.png)
+
+<details>
+<summary>View Mermaid Diagram Code</summary>
+
+```mermaid
+flowchart TD
+    Start([User Query]) --> Ingest
+    
+    subgraph Ingestion["📄 Document Ingestion"]
+        Ingest[arXiv/PDF Upload] --> Validate[Validate Document]
+    end
+    
+    subgraph Processing["🔧 Document Processing"]
+        Validate --> Parse[Parse PDF<br/>PyMuPDF]
+        Parse --> Clean[Clean Text<br/>Remove Artifacts]
+        Clean --> Extract[Extract Metadata<br/>Title, Authors, Abstract]
+    end
+    
+    subgraph Chunking["✂️ Text Chunking"]
+        Extract --> Split[Recursive Splitter<br/>Size: 1000, Overlap: 100]
+        Split --> MinLen[Filter Min Length<br/>200 chars]
+    end
+    
+    subgraph Embedding["🧠 Vector Embedding"]
+        MinLen --> Embed[NVIDIA nv-embed-v1<br/>1024-dim vectors]
+    end
+    
+    subgraph Storage["🗄️ Vector Storage"]
+        Embed --> Store1[(FAISS Document Store)]
+        Embed --> Store2[(FAISS Conversation Store)]
+        Embed --> Store3[(Metadata Store)]
+    end
+    
+    subgraph Retrieval["🔍 Semantic Retrieval"]
+        Query[User Question] --> EmbedQ[Embed Query]
+        EmbedQ --> Search1[Search Documents]
+        EmbedQ --> Search2[Search Chat History]
+        Store1 --> Search1
+        Store2 --> Search2
+        Store3 --> Search1
+    end
+    
+    subgraph Aggregation["🎯 Context Aggregation"]
+        Search1 --> Reorder[Reorder by Relevance]
+        Search2 --> Reorder
+        Reorder --> Context[Prepare Context]
+    end
+    
+    subgraph Generation["🤖 LLM Generation - NVIDIA"]
+        Context --> Prompt[Inject into Prompt<br/>System + Context + History]
+        Prompt --> NVIDIA[NVIDIA Mixtral 22B<br/>mistralai/mixtral-8x22b-instruct-v0.1]
+    end
+    
+    subgraph Response["📤 Response Delivery"]
+        NVIDIA --> Format[Format Response]
+        Format --> Cite[Add Citations]
+        Cite --> Return([Return to User])
+    end
+    
+    Query -.-> Start
+    Cite --> Store2
+    
+    style Ingest fill:#E8F4F8,stroke:#4A90E2
+    style Parse fill:#FFF4E6,stroke:#F59E0B
+    style Split fill:#FCE7F3,stroke:#EC4899
+    style Embed fill:#DBEAFE,stroke:#3B82F6
+    style Store1 fill:#FEE2E2,stroke:#EF4444
+    style Store2 fill:#FEE2E2,stroke:#EF4444
+    style Store3 fill:#FEE2E2,stroke:#EF4444
+    style Search1 fill:#F3E8FF,stroke:#A855F7
+    style Reorder fill:#DCFCE7,stroke:#22C55E
+    style NVIDIA fill:#D1FAE5,stroke:#10B981
+    style Format fill:#E0E7FF,stroke:#6366F1
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           RAG PIPELINE FLOW                                    │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  📄 DOCUMENT INGESTION LAYER                                                    │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐             │
-│  │   arXiv Papers  │    │   PDF Upload    │    │   Custom Docs   │             │
-│  │                 │    │                 │    │                 │             │
-│  │ • Auto-fetch    │    │ • User Upload   │    │ • External APIs │             │
-│  │ • Metadata      │    │ • Validation    │    │ • File Import   │             │
-│  │ • Paper IDs     │    │ • Processing    │    │ • Bulk Import   │             │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘             │
-│           │                       │                       │                     │
-│           └───────────────────────┼───────────────────────┘                     │
-│                                   ▼                                             │
-│  🔧 DOCUMENT PROCESSING LAYER                                                   │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                Document Preprocessing                           │             │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │             │
-│  │  │   PDF Parse │  │ Text Clean  │  │ Metadata    │            │             │
-│  │  │             │  │             │  │ Extraction  │            │             │
-│  │  │ • PyMuPDF   │  │ • Format    │  │ • Title     │            │             │
-│  │  │ • Text      │  │ • Cleanup   │  │ • Authors   │            │             │
-│  │  │ • Images    │  │ • Encoding  │  │ • Abstract  │            │             │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘            │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  ✂️  TEXT CHUNKING LAYER                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │              Recursive Character Text Splitter                  │             │
-│  │                                                                 │             │
-│  │  • Chunk Size: 1000 characters                                  │             │
-│  │  • Overlap: 100 characters                                      │             │
-│  │  • Separators: ["\n\n", "\n", ".", ";", ",", " "]              │             │
-│  │  • Min Length: 200 characters                                   │             │
-│  │  • Metadata Preservation                                        │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  🧠 EMBEDDING GENERATION LAYER                                                 │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                   NVIDIA Embeddings                             │             │
-│  │                                                                 │             │
-│  │  Model: nvidia/nv-embed-v1                                      │             │
-│  │  • 1024-dimensional vectors                                     │             │
-│  │  • Semantic similarity encoding                                 │             │
-│  │  • Batch processing support                                     │             │
-│  │  • Truncation handling                                          │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  🗄️  VECTOR STORAGE LAYER                                                     │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                      FAISS Vector Store                         │             │
-│  │                                                                 │             │
-│  │  • Document Store (Paper Content)                              │             │
-│  │  • Conversation Store (Chat History)                           │             │
-│  │  • Metadata Store (Paper Information)                          │             │
-│  │  • Similarity Search Index                                     │             │
-│  │  • Aggregated Vector Collections                               │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  🔍 RETRIEVAL LAYER                                                             │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                    Semantic Search                              │             │
-│  │                                                                 │             │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │             │
-│  │  │ Document    │  │ Conversation│  │ Metadata    │            │             │
-│  │  │ Retrieval   │  │ Retrieval   │  │ Retrieval   │            │             │
-│  │  │             │  │             │  │             │            │             │
-│  │  │ • Top-k     │  │ • Chat      │  │ • Paper     │            │             │
-│  │  │ • Relevance │  │ • History   │  │ • Info      │            │             │
-│  │  │ • Context   │  │ • Context   │  │ • Stats     │            │             │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘            │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  🎯 CONTEXT AGGREGATION LAYER                                                  │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                Context Reordering & Aggregation                │             │
-│  │                                                                 │             │
-│  │  • Relevance Scoring                                            │             │
-│  │  • Context Prioritization                                       │             │
-│  │  • Document Reordering                                          │             │
-│  │  • Metadata Integration                                         │             │
-│  │  • Source Citation Preparation                                  │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  🤖 GENERATION LAYER                                                           │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                   Prompt Engineering                            │             │
-│  │  ┌─────────────────────────────────────────────────────────┐   │             │
-│  │  │              System Message Template                     │   │             │
-│  │  │                                                         │   │             │
-│  │  │  "You are a document chatbot. Help the user as they     │   │             │
-│  │  │   ask questions about documents.                         │   │             │
-│  │  │                                                         │   │             │
-│  │  │   User message: {input}                                 │   │             │
-│  │  │   Conversation History: {history}                       │   │             │
-│  │  │   Document Context: {context}                           │   │             │
-│  │  │                                                         │   │             │
-│  │  │   (Answer only from retrieval. Cite sources. Be         │   │             │
-│  │  │    conversational.)"                                    │   │             │
-│  │  └─────────────────────────────────────────────────────────┘   │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  🧠 LLM GENERATION LAYER                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                   NVIDIA Mixtral LLM                           │             │
-│  │                                                                 │             │
-│  │  Model: mistralai/mixtral-8x22b-instruct-v0.1                 │             │
-│  │  • 22B parameter model                                         │             │
-│  │  • Instruction-tuned                                           │             │
-│  │  • Context-aware responses                                     │             │
-│  │  • Source citation capability                                  │             │
-│  │  • Conversational output                                       │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  📤 RESPONSE DELIVERY LAYER                                                    │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                    Response Processing                          │             │
-│  │                                                                 │             │
-│  │  • Content Generation                                           │             │
-│  │  • Source Attribution                                           │             │
-│  │  • Paper Information                                            │             │
-│  │  • JSON Serialization                                           │             │
-│  │  • Error Handling                                               │             │
-│  │  • Logging & Analytics                                          │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-│                                   ▼                                             │
-│  💬 USER INTERFACE LAYER                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐             │
-│  │                    React Frontend                               │             │
-│  │                                                                 │             │
-│  │  • Real-time Chat Interface                                    │             │
-│  │  • Paper Browser & Management                                  │             │
-│  │  • Response Display with Citations                             │             │
-│  │  • Feedback Collection                                         │             │
-│  │  • Theme & UI Controls                                         │             │
-│  └─────────────────────────────────────────────────────────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
+</details>
 
 ### 🔄 RAG Pipeline Flow Details
 

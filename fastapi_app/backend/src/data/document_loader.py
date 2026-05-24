@@ -10,8 +10,8 @@ from config.settings import (
     PAPER_IDS,
 )
 
-from langchain.document_loaders import ArxivLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import ArxivLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 def create_text_splitter():

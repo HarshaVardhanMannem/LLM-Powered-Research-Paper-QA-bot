@@ -127,7 +127,9 @@ def main() -> None:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--input-dir", type=Path, help="Directory of PDF files")
     group.add_argument("--manifest", type=Path, help="CSV with path or arxiv_id column")
-    parser.add_argument("--limit", type=int, default=10000, help="Max documents (default 10000)")
+    parser.add_argument(
+        "--limit", type=int, default=10000, help="Max documents (default 10000)"
+    )
     args = parser.parse_args()
 
     init_db()

@@ -9,7 +9,7 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 
-from config.settings import (
+from backend.config.settings import (
     CHUNK_OVERLAP,
     CHUNK_SEPARATORS,
     CHUNK_SIZE,
@@ -86,11 +86,7 @@ class SectionChunker(BaseDocumentTransformer):
                 section_title, section_level = self._merge_section_metadata(
                     getattr(split, "metadata", {}) or {}
                 )
-                meta = {
-                    **doc.metadata,
-                    "section_title": section_title,
-                    "section_level": section_level,
-                }
+                meta = {**doc.metadata, "section_title": section_title, "section_level": section_level}
 
                 if len(split.page_content) <= self.chunk_size:
                     if len(split.page_content) >= self.min_chunk_length:

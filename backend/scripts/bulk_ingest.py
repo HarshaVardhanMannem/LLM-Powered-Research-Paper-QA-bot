@@ -18,19 +18,22 @@ _backend = Path(__file__).resolve().parent.parent
 if str(_backend) not in sys.path:
     sys.path.insert(0, str(_backend))
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(_backend / ".env")
 
-from config.settings import EXTRACTION_MODE
-from src.data.chunking import get_chunker
-from src.data.document_loader import load_single_arxiv_document, preprocess_documents
-from src.data.extraction import extract_pdf_with_structure
-from src.db.models import KnowledgeBase, KnowledgeBaseDocument
-from src.db.session import SessionLocal, init_db
-from src.embedding.embeddings import get_embedder
-from src.retrieval.qdrant_setup import init_qdrant_collection
-from src.retrieval.qdrant_store import QdrantStore
+from backend.config.settings import EXTRACTION_MODE  # noqa: E402
+from backend.src.data.chunking import get_chunker  # noqa: E402
+from backend.src.data.document_loader import (  # noqa: E402
+    load_single_arxiv_document,
+    preprocess_documents,
+)
+from backend.src.data.extraction import extract_pdf_with_structure  # noqa: E402
+from backend.src.db.models import KnowledgeBase, KnowledgeBaseDocument  # noqa: E402
+from backend.src.db.session import SessionLocal, init_db  # noqa: E402
+from backend.src.embedding.embeddings import get_embedder  # noqa: E402
+from backend.src.retrieval.qdrant_setup import init_qdrant_collection  # noqa: E402
+from backend.src.retrieval.qdrant_store import QdrantStore  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,

@@ -44,7 +44,9 @@ def extract_pdf_with_structure(
                 if markdown and markdown.strip():
                     return Document(page_content=markdown, metadata=metadata)
             except ImportError:
-                logger.debug("pymupdf4llm not installed, falling back to flat extraction")
+                logger.debug(
+                    "pymupdf4llm not installed, falling back to flat extraction"
+                )
             except Exception as e:
                 logger.warning(
                     "pymupdf4llm extraction failed (%s), falling back to flat extraction",

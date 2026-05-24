@@ -1,8 +1,17 @@
 """Configuration settings for the application."""
 
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Model configurations
-EMBEDDING_MODEL = "nvidia/nv-embed-v1"
-LLM_MODEL = "mistralai/mixtral-8x22b-instruct-v0.1"
+EMBEDDING_MODEL = "nvidia/nv-embedqa-e5-v5"
+LLM_MODEL = "meta/llama-3.3-70b-instruct"
+
+# Extraction mode: "structure" (pymupdf4llm markdown) | "flat" (plain text)
+EXTRACTION_MODE = os.getenv("EXTRACTION_MODE", "structure")
 
 # Chunking parameters
 CHUNK_SIZE = 1000
@@ -35,3 +44,8 @@ Document Retrieval:
 
 (Answer only from retrieval. Only cite sources that are used. Make your response \
 conversational.)"""
+
+# JWT / Auth
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days

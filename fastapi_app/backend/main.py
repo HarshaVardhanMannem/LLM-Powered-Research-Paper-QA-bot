@@ -2,10 +2,12 @@ import hashlib
 import logging
 import sys
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import List
+from typing import Annotated, List, Optional
 
 from config.settings import LLM_MODEL, PAPER_IDS
+from src.auth.deps import get_current_user
 from src.data.document_loader import (
     create_document_chunks,
     create_metadata_chunks,
@@ -14,24 +16,27 @@ from src.data.document_loader import (
     load_single_arxiv_document,
     preprocess_documents,
 )
+from src.db.models import User
+from src.db.session import get_db, init_db
 from src.prompts.chat_prompts import create_chat_prompt
-from src.retrieval.vector_store import (
-    add_documents_to_vector_store,
-    aggregate_vector_stores,
-    create_default_faiss,
-    create_vector_stores,
-    docs_to_string,
-    reorder_documents,
+from src.retrieval.qdrant_setup import init_qdrant_collection
+from src.retrieval.qdrant_store import QdrantStore
+from src.auth.routes import router as auth_router
+from src.knowledge.routes import router as kb_router
+from src.utils.conversation_store import (
+    get_recent_conversation_history,
+    save_conversation_turn,
 )
-from src.utils.feedback_store import FeedbackStore
+from src.utils.feedback_store_postgres import FeedbackStorePostgres
 
 import fitz  # PyMuPDF
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from langchain.schema import Document
+from langchain_core.documents import Document
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 # Configure logging
 logging.basicConfig(
@@ -47,61 +52,14 @@ logger.debug(f"Added root directory to Python path: {root_dir}")
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="Research Papers QA API")
-
-# Configuration constants
-UPLOAD_FOLDER = "uploads/papers"
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-# Create upload directory
-Path(UPLOAD_FOLDER).mkdir(parents=True, exist_ok=True)
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins during development
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Global resources (LLM, prompt, qdrant_store)
+resources = None
 
 
-# Initialize feedback store
-feedback_store = FeedbackStore()
-
-
-# Initialize resources
 def initialize_resources():
+    """Initialize LLM, prompt, and Qdrant store (no per-user data loaded here)."""
     logger.info("Starting resource initialization")
     try:
-        logger.debug("Loading arXiv documents")
-        docs = load_arxiv_documents()
-        logger.debug(f"Loaded {len(docs)} documents")
-
-        logger.debug("Preprocessing documents")
-        docs = preprocess_documents(docs)
-        logger.debug("Documents preprocessed successfully")
-
-        logger.debug("Creating document chunks")
-        docs_chunks = create_document_chunks(docs)
-        logger.debug(f"Created {len(docs_chunks)} document chunks")
-
-        logger.debug("Creating metadata chunks")
-        extra_chunks, doc_string = create_metadata_chunks(docs_chunks)
-        logger.debug("Metadata chunks created successfully")
-
-        logger.debug("Creating vector stores")
-        vecstores = create_vector_stores(docs_chunks, extra_chunks)
-        logger.debug("Vector stores created successfully")
-
-        logger.debug("Aggregating vector stores")
-        docstore = aggregate_vector_stores(vecstores)
-        logger.debug("Vector stores aggregated successfully")
-
-        logger.debug("Creating conversation store")
-        convstore = create_default_faiss()
-        logger.debug("Conversation store created successfully")
-
         logger.debug(f"Initializing LLM with model: {LLM_MODEL}")
         llm = ChatNVIDIA(model=LLM_MODEL)
         logger.debug("LLM initialized successfully")
@@ -110,39 +68,125 @@ def initialize_resources():
         chat_prompt = create_chat_prompt()
         logger.debug("Chat prompt created successfully")
 
-        loaded_papers = []
-        for paper_id, doc_chunks in zip(PAPER_IDS, docs_chunks):
-            # Use the paper_id from config, and get the title from the first chunk's
-            # metadata
-            title = "Untitled"
-            if doc_chunks and len(doc_chunks) > 0:
-                metadata = getattr(doc_chunks[0], "metadata", {})
-                title = metadata.get("Title", "Untitled")
-                loaded_papers.append({"id": paper_id, "title": title})
-        logger.info(
-            f"Resource initialization completed. Loaded {len(loaded_papers)} papers"
-        )
+        logger.debug("Creating Qdrant store")
+        qdrant_store = QdrantStore()
+        logger.debug("Qdrant store created successfully")
 
         return {
-            "docstore": docstore,
-            "convstore": convstore,
             "llm": llm,
             "chat_prompt": chat_prompt,
-            "doc_string": doc_string,
-            "loaded_papers": loaded_papers,
+            "qdrant_store": qdrant_store,
         }
     except Exception as e:
         logger.error(f"Error during resource initialization: {str(e)}", exc_info=True)
         raise
 
 
-# Initialize resources at startup
-resources = initialize_resources()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    global resources
+    logger.info("Starting application...")
+
+    logger.info("Initializing database...")
+    try:
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(
+            f"Database initialization failed: {e}\n"
+            f"Please ensure PostgreSQL is running.\n"
+            f"To start PostgreSQL: cd docker/postgres && docker-compose up -d\n"
+            f"Or update POSTGRES_* variables in .env to match your PostgreSQL instance."
+        )
+        raise
+
+    logger.info("Initializing Qdrant...")
+    try:
+        init_qdrant_collection()
+        logger.info("Qdrant initialized successfully")
+    except Exception as e:
+        logger.error(f"Qdrant initialization failed: {e}")
+        raise
+
+    logger.info("Initializing resources...")
+    resources = initialize_resources()
+    logger.info("Application startup complete")
+
+    yield
+
+    logger.info("Shutting down application...")
+
+
+app = FastAPI(title="Research Papers QA API", lifespan=lifespan)
+
+UPLOAD_FOLDER = "uploads/papers"
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+Path(UPLOAD_FOLDER).mkdir(parents=True, exist_ok=True)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+feedback_store_pg = FeedbackStorePostgres()
+
+app.include_router(auth_router)
+app.include_router(kb_router, prefix="/knowledge-bases")
+
+
+def ensure_resources():
+    """Ensure resources are initialized, raise HTTPException if not."""
+    if resources is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Service is still initializing. Please try again in a moment.",
+        )
+    return resources
+
+
+def docs_to_string(docs: list[Document]) -> str:
+    """Convert document list to string representation."""
+    if not docs:
+        return "No relevant documents found."
+    result = []
+    for doc in docs:
+        content = getattr(doc, "page_content", "")
+        if not content or content.strip() == "":
+            continue
+        metadata = getattr(doc, "metadata", {})
+        source = metadata.get("source", "")
+        title = metadata.get("Title", "")
+        header = f"Source: {source}" if source else ""
+        header += f" Title: {title}" if title else ""
+        if header:
+            result.append(f"{header}\n{content}\n")
+        else:
+            result.append(content)
+    if not result:
+        return "No relevant document content found."
+    return "\n\n".join(result)
+
+
+def history_to_string(history: list[tuple[str, str]]) -> str:
+    """Convert conversation history to string for the prompt."""
+    if not history:
+        return "No conversation history."
+    parts = []
+    for role, content in history:
+        prefix = "User" if role == "user" else "Assistant"
+        parts.append(f"{prefix}: {content}")
+    return "\n".join(parts)
 
 
 # Pydantic models
 class Question(BaseModel):
     text: str
+    knowledge_base_ids: Optional[List[int]] = None
 
 
 class PaperAdd(BaseModel):
@@ -172,243 +216,266 @@ async def root():
 
 
 @app.get("/papers")
-async def get_papers():
-    return {"papers": resources["loaded_papers"]}
+async def get_papers(current_user: Annotated[User, Depends(get_current_user)]):
+    """Get papers belonging to the current user."""
+    res = ensure_resources()
+    papers = res["qdrant_store"].get_user_papers(current_user.id)
+    return {"papers": papers}
 
 
 @app.post("/chat")
-async def chat(question: Question):
-    logger.info(f"Received chat request with question: {question.text[:100]}...")
+async def chat(
+    question: Question,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Chat with the user's papers or selected knowledge bases. Requires authentication."""
+    logger.info(f"User {current_user.id} asked: {question.text[:100]}...")
+    res = ensure_resources()
+    store: QdrantStore = res["qdrant_store"]
     try:
-        logger.debug("Creating retrieval chain")
+        if question.knowledge_base_ids:
+            context_docs = store.search(
+                query=question.text,
+                user_id=None,
+                limit=5,
+                kb_ids=question.knowledge_base_ids,
+            )
+        else:
+            context_docs = store.search(
+                query=question.text,
+                user_id=current_user.id,
+                limit=5,
+            )
+        context_str = docs_to_string(context_docs)
+
+        history = get_recent_conversation_history(db, current_user.id, limit=10)
+        history_str = history_to_string(history)
+
         retrieval = {
             "input": question.text,
-            "history": docs_to_string(
-                reorder_documents(
-                    resources["convstore"].as_retriever().invoke(question.text)
-                )
-            ),
-            "context": docs_to_string(
-                reorder_documents(
-                    resources["docstore"].as_retriever().invoke(question.text)
-                )
-            ),
+            "history": history_str,
+            "context": context_str,
         }
-        logger.debug("Retrieval chain created successfully")
 
-        logger.debug("Generating response using chat prompt")
-        response = resources["chat_prompt"].invoke(retrieval)
-        logger.debug("Chat prompt generated successfully")
+        response = res["chat_prompt"].invoke(retrieval)
+        response = res["llm"].invoke(response)
 
-        logger.debug("Invoking LLM for final response")
-        response = resources["llm"].invoke(response)
-        logger.debug("LLM response generated successfully")
+        save_conversation_turn(db, current_user.id, question.text, response.content)
 
-        logger.info("Chat request completed successfully")
+        papers = store.get_user_papers(current_user.id)
+
         return ChatResponse(
             response=response.content,
-            papers=[
-                PaperInfo(id=paper["id"], title=paper["title"])
-                for paper in resources["loaded_papers"]
-            ],
+            papers=[PaperInfo(id=p["id"], title=p["title"]) for p in papers],
         )
     except Exception as e:
         logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/papers/upload")
-async def upload_file(file: UploadFile = File(...)):
-    logger.info(f"Received file upload request for: {file.filename}")
-
-    try:
-        # Validate file type
-        if not file.filename.lower().endswith(".pdf"):
-            logger.warning(f"Invalid file type: {file.filename}")
-            raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
-
-        # Read file contents
-        contents = await file.read()
-
-        # Validate file size
-        if len(contents) > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File size exceeds the limit of "
-                f"{MAX_FILE_SIZE / (1024*1024)}MB.",
-            )
-
-        # Generate content hash to check for duplicates
-        content_hash = hashlib.md5(contents).hexdigest()
-
-        # Check if this file (by hash) has already been uploaded
-        existing_paper = next(
-            (
-                p
-                for p in resources["loaded_papers"]
-                if p.get("content_hash") == content_hash
-            ),
-            None,
-        )
-        if existing_paper:
-            logger.info(f"File already exists: {existing_paper['title']}")
-            return {
-                "message": f"File already uploaded: {existing_paper['title']}",
-                "papers": resources["loaded_papers"],
-            }
-
-        # Load and process the document directly from memory
-        logger.debug("Attempting to load PDF document from memory")
-        doc = load_pdf_from_bytes(contents, filename=file.filename)
-
-        # We get a single Document object back, not a list
-        text_splitter = create_text_splitter()
-        chunks = text_splitter.split_documents([doc])  # split_documents expects a list
-
-        if not chunks:
-            logger.error("Document processed but no chunks were created.")
-            raise HTTPException(
-                status_code=500, detail="Failed to process document into chunks."
-            )
-
-        # Add to vector store
-        add_documents_to_vector_store(resources["docstore"], chunks)
-        logger.debug("Documents added to vector store successfully.")
-
-        # Update resources
-        title = doc.metadata.get("Title", file.filename)
-        paper_id = str(uuid.uuid4())
-
-        # Add with content hash for duplicate detection
-        resources["loaded_papers"].append(
-            {"id": paper_id, "title": title, "content_hash": content_hash}
-        )
-        resources["doc_string"] += f"\n - {title}"
-
-        logger.info(f"Successfully uploaded and processed paper: {title}")
-        return {
-            "message": f"Successfully uploaded and processed paper: {title}",
-            "papers": resources["loaded_papers"],
-        }
-
-    except HTTPException as e:
-        logger.warning(f"HTTP Exception during file upload: {e.detail}")
-        raise e
-    except Exception as e:
-        logger.error(
-            f"An unexpected error occurred during file upload: {str(e)}", exc_info=True
-        )
-        raise HTTPException(
-            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
-        )
-
-
-def add_paper_to_resources(paper_id, resources):
-    """Add a new paper to existing resources."""
-    try:
-        # Check if paper already exists BEFORE processing
-        if any(p["id"] == paper_id for p in resources["loaded_papers"]):
-            existing_paper = next(
-                p for p in resources["loaded_papers"] if p["id"] == paper_id
-            )
-            return True, f"Paper already loaded: {existing_paper['title']}"
-
-        # Load single document
-        new_doc = load_single_arxiv_document(paper_id)
-        if not new_doc or len(new_doc) == 0:
-            return False, f"Failed to load paper with ID: {paper_id}"
-
-        # Preprocess
-        new_doc = preprocess_documents([new_doc])
-        new_doc_chunks = create_document_chunks(new_doc)
-
-        # Validate chunks
-        if not new_doc_chunks or not new_doc_chunks[0] or len(new_doc_chunks[0]) == 0:
-            return (
-                False,
-                f"Paper loaded but no valid content chunks were created for: "
-                f"{paper_id}",
-            )
-
-        # Add to vector store
-        add_documents_to_vector_store(resources["docstore"], new_doc_chunks[0])
-
-        # Update document string and loaded_papers
-        metadata = getattr(new_doc_chunks[0][0], "metadata", {})
-        title = metadata.get("Title", "Untitled")
-        resources["doc_string"] += f"\n - {title}"
-        resources["loaded_papers"].append({"id": paper_id, "title": title})
-
-        return True, f"Successfully added paper: {title}"
-    except Exception as e:
-        return False, f"Error processing paper {paper_id}: {str(e)}"
-
-
 @app.post("/papers/add")
-async def add_paper(paper: PaperAdd):
-    logger.info(f"Received request to add paper: {paper.paper_id}")
+async def add_paper(
+    paper: PaperAdd,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Add an arXiv paper by ID. Each user gets their own copy."""
+    logger.info(f"User {current_user.id} adding paper: {paper.paper_id}")
+    res = ensure_resources()
+    store: QdrantStore = res["qdrant_store"]
+
+    if store.paper_exists_for_user(current_user.id, paper.paper_id):
+        papers = store.get_user_papers(current_user.id)
+        return {"message": f"Paper already loaded: {paper.paper_id}", "papers": papers}
+
     try:
-        success, message = add_paper_to_resources(paper.paper_id, resources)
-        if success:
-            logger.info(f"Successfully added paper: {paper.paper_id}")
-            return {"message": message, "papers": resources["loaded_papers"]}
-        else:
-            logger.warning(f"Failed to add paper {paper.paper_id}: {message}")
-            raise HTTPException(status_code=400, detail=message)
+        new_doc = load_single_arxiv_document(paper.paper_id)
+        if not new_doc or len(new_doc) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to load paper with ID: {paper.paper_id}",
+            )
+
+        new_doc = preprocess_documents([new_doc])
+        doc_chunks = create_document_chunks(new_doc)
+
+        if not doc_chunks or not doc_chunks[0]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No content chunks created for paper: {paper.paper_id}",
+            )
+
+        metadata = getattr(doc_chunks[0][0], "metadata", {})
+        title = metadata.get("Title", "Untitled")
+
+        store.add_documents(
+            chunks=doc_chunks[0],
+            user_id=current_user.id,
+            paper_id=paper.paper_id,
+            paper_title=title,
+            source=f"arxiv:{paper.paper_id}",
+        )
+
+        papers = store.get_user_papers(current_user.id)
+        return {"message": f"Successfully added paper: {title}", "papers": papers}
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error adding paper: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/feedback")
-async def submit_feedback(feedback: Feedback):
-    logger.info(
-        f"Received feedback submission for question: {feedback.question[:100]}..."
-    )
+@app.post("/papers/upload")
+async def upload_file(
+    file: UploadFile,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Upload a PDF paper. Requires authentication; scoped to user."""
+    logger.info(f"User {current_user.id} uploading file: {file.filename}")
+    res = ensure_resources()
+    store: QdrantStore = res["qdrant_store"]
+
     try:
-        feedback_store.save_feedback(
-            feedback.question, feedback.answer, feedback.feedback_type
+        if not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
+
+        contents = await file.read()
+
+        if len(contents) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File size exceeds {MAX_FILE_SIZE / (1024*1024)}MB limit.",
+            )
+
+        content_hash = hashlib.md5(contents).hexdigest()
+        paper_id = f"upload-{content_hash[:12]}"
+
+        if store.paper_exists_for_user(current_user.id, paper_id):
+            papers = store.get_user_papers(current_user.id)
+            return {
+                "message": f"File already uploaded: {file.filename}",
+                "papers": papers,
+            }
+
+        doc = load_pdf_from_bytes(contents, filename=file.filename)
+        text_splitter = create_text_splitter()
+        chunks = text_splitter.split_documents([doc])
+
+        if not chunks:
+            raise HTTPException(
+                status_code=500, detail="Failed to process document into chunks."
+            )
+
+        title = doc.metadata.get("Title", file.filename)
+
+        store.add_documents(
+            chunks=chunks,
+            user_id=current_user.id,
+            paper_id=paper_id,
+            paper_title=title,
+            source=file.filename,
         )
-        logger.info("Feedback saved successfully")
+
+        papers = store.get_user_papers(current_user.id)
+        return {
+            "message": f"Successfully uploaded: {title}",
+            "papers": papers,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/papers/{paper_id}")
+async def delete_paper(
+    paper_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Delete a paper from the current user's collection."""
+    res = ensure_resources()
+    store: QdrantStore = res["qdrant_store"]
+
+    if not store.paper_exists_for_user(current_user.id, paper_id):
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    store.delete_user_paper(current_user.id, paper_id)
+    papers = store.get_user_papers(current_user.id)
+    return {"message": f"Paper {paper_id} deleted", "papers": papers}
+
+
+@app.post("/feedback")
+async def submit_feedback(
+    feedback: Feedback,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Submit feedback. Requires authentication."""
+    logger.info(f"User {current_user.id} feedback for: {feedback.question[:100]}...")
+    try:
+        feedback_store_pg.save_feedback(
+            feedback.question,
+            feedback.answer,
+            feedback.feedback_type,
+            db=db,
+            user_id=current_user.id,
+        )
         return {"message": "Feedback saved successfully"}
     except Exception as e:
         logger.error(f"Error saving feedback: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/feedback/stats")
+async def get_feedback_stats(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Get feedback stats for the current user."""
+    try:
+        stats = feedback_store_pg.get_feedback_stats(db, user_id=current_user.id)
+        return stats
+    except Exception as e:
+        logger.error(f"Error retrieving feedback stats: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/conversations")
+async def get_conversations(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Get conversation history for the current user."""
+    history = get_recent_conversation_history(db, current_user.id, limit=50)
+    return {
+        "conversations": [
+            {"role": role, "content": content} for role, content in history
+        ]
+    }
+
+
 def load_pdf_from_bytes(pdf_bytes, filename):
-    """Loads a PDF from bytes and extracts text, returns a single Document object."""
+    """Loads a PDF from bytes and extracts text, returns a single Document."""
     doc_reader = None
     try:
         doc_reader = fitz.open(stream=pdf_bytes, filetype="pdf")
         text = ""
         for page in doc_reader:
             text += page.get_text()
-
         if not text.strip():
             raise ValueError("No text content found in PDF")
-
         return Document(
             page_content=text, metadata={"Title": filename, "source": filename}
         )
     except Exception as e:
-        logger.error(f"Failed to load or read PDF {filename}: {str(e)}", exc_info=True)
+        logger.error(f"Failed to read PDF {filename}: {str(e)}", exc_info=True)
         raise
     finally:
         if doc_reader:
             doc_reader.close()
-
-
-@app.get("/feedback/stats")
-async def get_feedback_stats():
-    logger.info("Received request for feedback statistics")
-    try:
-        stats = feedback_store.get_feedback_stats()
-        logger.info("Successfully retrieved feedback statistics")
-        return stats
-    except Exception as e:
-        logger.error(f"Error retrieving feedback statistics: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

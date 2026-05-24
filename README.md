@@ -4,7 +4,7 @@ A sophisticated AI-powered question-answering system that allows users to intera
 
 ## 🎥 Demo Video
 
-![Research Paper QA Bot Demo](fastapi_app/ResearchpaperDemo.gif)
+![Research Paper QA Bot Demo](assets/ResearchpaperDemo.gif)
 
 *Watch the demo to see the LLM-Powered Research Paper QA Bot in action!*
 
@@ -44,7 +44,7 @@ A sophisticated AI-powered question-answering system that allows users to intera
 
 ### System Overview
 
-![System Architecture](fastapi_app/system_architecture.png)
+![System Architecture](assets/system_architecture.png)
 
 <details>
 <summary>View Mermaid Diagram Code</summary>
@@ -118,7 +118,7 @@ graph TB
 
 Our implementation follows a sophisticated Retrieval-Augmented Generation (RAG) pipeline that combines document processing, vector embeddings, semantic search, and generative AI to provide intelligent question-answering capabilities.
 
-![RAG Pipeline Flowchart](fastapi_app/rag_pipeline.png)
+![RAG Pipeline Flowchart](assets/rag_pipeline.png)
 
 <details>
 <summary>View Mermaid Diagram Code</summary>
@@ -316,7 +316,7 @@ Create a `.env` file in the project root:
 
 #### Backend Setup
 ```bash
-cd fastapi_app/backend
+cd backend
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -325,7 +325,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 #### Frontend Setup
    ```bash
-cd fastapi_app/frontend
+cd frontend
 npm install
 npm start
 ```
@@ -354,7 +354,7 @@ npm start
 
 ## 🔧 Configuration
 
-### Backend Configuration (`fastapi_app/backend/config/settings.py`)
+### Backend Configuration (`backend/config/settings.py`)
 
 ```python
 # AI Models
@@ -396,7 +396,7 @@ PAPER_IDS = [
 ### Code Quality
 ```bash
 # Run linting
-cd fastapi_app/backend
+cd backend
 python -m black .
 python -m flake8 .
 python -m isort .
@@ -414,29 +414,33 @@ python -m pytest tests/
 ## 📁 Project Structure
 
 ```
-├── fastapi_app/
-│   ├── backend/
-│   │   ├── src/
-│   │   │   ├── data/          # Document loading and processing
-│   │   │   ├── embedding/     # Vector embeddings
-│   │   │   ├── prompts/       # Chat prompt templates
-│   │   │   ├── retrieval/     # Vector search and retrieval
-│   │   │   └── utils/         # Utility functions
-│   │   ├── config/            # Configuration settings
-│   │   ├── tests/             # Test files
-│   │   └── main.py            # FastAPI application
-│   └── frontend/
-│       ├── src/
-│       │   ├── components/    # React components
-│       │   ├── hooks/         # Custom React hooks
-│       │   └── App.js         # Main application
-│       └── public/            # Static assets
-├── .github/
-│   └── workflows/             # CI/CD configuration
-├── docker-compose.yml         # Docker services
-├── Dockerfile                 # Multi-stage Docker build
-└── README.md                  # This file
+.
+|-- assets/
+|   |-- ResearchpaperDemo.gif
+|   |-- rag_pipeline.png
+|   `-- system_architecture.png
+|-- backend/
+|   |-- src/
+|   |   |-- data/              # Document loading and processing
+|   |   |-- embedding/         # Vector embeddings
+|   |   |-- prompts/           # Chat prompt templates
+|   |   |-- retrieval/         # Vector search and retrieval
+|   |   `-- utils/             # Utility functions
+|   |-- config/                # Configuration settings
+|   |-- tests/                 # Test files
+|   `-- main.py                # FastAPI application
+|-- frontend/
+|   |-- src/
+|   |   |-- components/        # React components
+|   |   `-- hooks/             # Custom React hooks
+|   `-- public/                # Static assets
+|-- .github/
+|   `-- workflows/             # CI/CD configuration
+|-- docker-compose.yml         # Docker services
+|-- Dockerfile                 # Multi-stage Docker build
+`-- README.md                  # This file
 ```
+
 
 ## 🤝 Contributing
 

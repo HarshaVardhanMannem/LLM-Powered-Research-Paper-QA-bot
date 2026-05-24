@@ -2,11 +2,11 @@
 
 from typing import Generator
 
-from config.postgres import get_postgres_config
+from backend.config.postgres import get_postgres_config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.db.models import Base
+from backend.src.db.models import Base
 
 
 def get_engine():
@@ -17,7 +17,10 @@ def get_engine():
         pool_pre_ping=True,
         pool_size=5,
         max_overflow=10,
-        connect_args={"connect_timeout": 10, "options": "-c statement_timeout=30000"},
+        connect_args={
+            "connect_timeout": 10,
+            "options": "-c statement_timeout=30000"
+        },
     )
 
 
@@ -31,7 +34,6 @@ def init_db() -> None:
         Base.metadata.create_all(bind=engine)
     except Exception as e:
         import logging
-
         logger = logging.getLogger(__name__)
         logger.error(
             f"Failed to initialize database: {e}\n"

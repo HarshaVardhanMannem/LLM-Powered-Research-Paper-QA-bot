@@ -4,27 +4,27 @@ import hashlib
 import logging
 from typing import Annotated, List, Optional
 
-from config.settings import EXTRACTION_MODE
+from backend.config.settings import EXTRACTION_MODE
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.auth.deps import get_current_user
-from src.data.chunking import get_chunker
-from src.data.document_loader import (
+from backend.src.auth.deps import get_current_user
+from backend.src.data.chunking import get_chunker
+from backend.src.data.document_loader import (
     load_single_arxiv_document,
     preprocess_documents,
 )
-from src.data.extraction import extract_pdf_with_structure
-from src.db.models import ChunkingStrategy, KnowledgeBase, KnowledgeBaseDocument, User
-from src.db.session import get_db
-from src.embedding.embeddings import get_embedder
-from src.knowledge.schemas import (
+from backend.src.data.extraction import extract_pdf_with_structure
+from backend.src.db.models import ChunkingStrategy, KnowledgeBase, KnowledgeBaseDocument, User
+from backend.src.db.session import get_db
+from backend.src.embedding.embeddings import get_embedder
+from backend.src.knowledge.schemas import (
     KnowledgeBaseCreate,
     KnowledgeBaseResponse,
     KnowledgeBaseUpdate,
 )
-from src.retrieval.qdrant_store import QdrantStore
+from backend.src.retrieval.qdrant_store import QdrantStore
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +32,13 @@ router = APIRouter(tags=["knowledge-bases"])
 
 
 def _get_store() -> QdrantStore:
-    from main import ensure_resources
+    from backend.main import ensure_resources
 
     res = ensure_resources()
     return res["qdrant_store"]
 
 
-def _kb_to_response(
-    kb: KnowledgeBase, db: Session, store: QdrantStore
-) -> KnowledgeBaseResponse:
+def _kb_to_response(kb: KnowledgeBase, db: Session, store: QdrantStore) -> KnowledgeBaseResponse:
     docs = store.get_kb_documents(kb.id)
     return KnowledgeBaseResponse(
         id=kb.id,
@@ -74,8 +72,7 @@ async def list_knowledge_bases(
     rows = (
         db.execute(
             select(KnowledgeBase).where(
-                (KnowledgeBase.is_system == True)
-                | (KnowledgeBase.owner_id == current_user.id)
+                (KnowledgeBase.is_system == True) | (KnowledgeBase.owner_id == current_user.id)
             )
         )
         .scalars()
@@ -212,9 +209,7 @@ async def add_document_to_kb(
 
             new_doc = load_single_arxiv_document(paper_id)
             if not new_doc or len(new_doc) == 0:
-                raise HTTPException(
-                    status_code=400, detail=f"Failed to load paper {paper_id}"
-                )
+                raise HTTPException(status_code=400, detail=f"Failed to load paper {paper_id}")
             processed = preprocess_documents([new_doc])
             if not processed or not processed[0]:
                 raise HTTPException(status_code=400, detail="No document content")
@@ -233,9 +228,7 @@ async def add_document_to_kb(
             if store.document_exists_in_kb(kb.id, paper_id):
                 docs = store.get_kb_documents(kb.id)
                 return {"message": f"File already in KB", "documents": docs}
-            doc = extract_pdf_with_structure(
-                contents, file.filename, use_structure=use_structure
-            )
+            doc = extract_pdf_with_structure(contents, file.filename, use_structure=use_structure)
             title = doc.metadata.get("Title", file.filename)
             source = file.filename
 
@@ -244,9 +237,7 @@ async def add_document_to_kb(
         elif hasattr(chunker, "transform_documents"):
             chunks = chunker.transform_documents([doc])
         else:
-            raise HTTPException(
-                status_code=500, detail="Chunker has no split/transform method"
-            )
+            raise HTTPException(status_code=500, detail="Chunker has no split/transform method")
 
         valid = [c for c in chunks if getattr(c, "page_content", "").strip()]
         if not valid:

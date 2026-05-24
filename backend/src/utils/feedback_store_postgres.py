@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from src.db.models import Feedback, User
+from backend.src.db.models import Feedback, User
 
 
 class FeedbackStorePostgres:

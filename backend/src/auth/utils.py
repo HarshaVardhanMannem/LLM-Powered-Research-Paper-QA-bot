@@ -4,11 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import bcrypt
-from config.settings import (
-    JWT_ALGORITHM,
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES,
-    JWT_SECRET_KEY,
-)
+from backend.config.settings import JWT_ALGORITHM, JWT_ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET_KEY
 from jose import jwt
 
 
@@ -27,13 +23,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     )
 
 
-def create_access_token(
-    subject: str | int, extra_claims: dict[str, Any] | None = None
-) -> str:
+def create_access_token(subject: str | int, extra_claims: dict[str, Any] | None = None) -> str:
     """Create a JWT access token."""
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {"exp": expire, "sub": str(subject)}
     if extra_claims:
         to_encode.update(extra_claims)

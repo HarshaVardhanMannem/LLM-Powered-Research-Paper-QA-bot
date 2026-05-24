@@ -23,16 +23,12 @@ class PostgresConfig:
     @property
     def url(self) -> str:
         """Build synchronous SQLAlchemy database URL."""
-        return (
-            f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        )
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
     @property
     def url_async(self) -> str:
         """Build async SQLAlchemy database URL (for asyncpg)."""
-        return (
-            f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        )
+        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
 def get_postgres_config() -> PostgresConfig:

@@ -2,7 +2,7 @@
 
 from functools import partial
 
-from langchain.schema.runnable import RunnableLambda
+from langchain_core.runnables import RunnableLambda
 
 
 def print_runnable(preface=""):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Seed predefined/system knowledge bases from config. Usage:
-python -m scripts.seed_predefined_kbs [--ingest]
-When --ingest is passed, also runs bulk ingest for each KB using PREDEFINED_KB_PAPER_IDS.
+  python -m scripts.seed_predefined_kbs [--ingest]
+  When --ingest is passed, also runs bulk ingest for each KB using PREDEFINED_KB_PAPER_IDS.
 """
 
 import argparse
@@ -13,13 +13,16 @@ _backend = Path(__file__).resolve().parent.parent
 if str(_backend) not in sys.path:
     sys.path.insert(0, str(_backend))
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(_backend / ".env")
 
-from config.kb_config import PREDEFINED_KB_DOMAINS, get_domain_paper_ids
-from src.db.models import ChunkingStrategy, KnowledgeBase
-from src.db.session import SessionLocal, init_db
+from backend.config.kb_config import (  # noqa: E402
+    PREDEFINED_KB_DOMAINS,
+    get_domain_paper_ids,
+)
+from backend.src.db.models import ChunkingStrategy, KnowledgeBase  # noqa: E402
+from backend.src.db.session import SessionLocal, init_db  # noqa: E402
 
 import logging
 
@@ -48,7 +51,7 @@ def main() -> None:
                 db.query(KnowledgeBase)
                 .filter(
                     KnowledgeBase.domain == domain,
-                    KnowledgeBase.is_system == True,
+                    KnowledgeBase.is_system.is_(True),
                 )
                 .first()
             )
@@ -82,7 +85,7 @@ def main() -> None:
                     db.query(KnowledgeBase)
                     .filter(
                         KnowledgeBase.domain == domain,
-                        KnowledgeBase.is_system == True,
+                        KnowledgeBase.is_system.is_(True),
                     )
                     .first()
                 )

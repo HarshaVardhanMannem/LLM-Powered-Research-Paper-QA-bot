@@ -14,9 +14,9 @@ from qdrant_client.http.models import (
     PointStruct,
 )
 
-from config.qdrant_config import get_qdrant_config
-from src.embedding.embeddings import get_embedder
-from src.retrieval.qdrant_setup import get_qdrant_client
+from backend.config.qdrant_config import get_qdrant_config
+from backend.src.embedding.embeddings import get_embedder
+from backend.src.retrieval.qdrant_setup import get_qdrant_client
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +46,7 @@ class QdrantStore:
         domain: Optional[str] = None,
     ) -> int:
         """Embed and upsert document chunks with user/paper or KB metadata."""
-        valid = [
-            c for c in chunks if hasattr(c, "page_content") and c.page_content.strip()
-        ]
+        valid = [c for c in chunks if hasattr(c, "page_content") and c.page_content.strip()]
         if not valid:
             logger.warning("No valid chunks to add")
             return 0
@@ -86,11 +84,7 @@ class QdrantStore:
         self.client.upsert(collection_name=self.collection_name, points=points)
         logger.info(
             "Added %d chunks for user=%s paper=%s (%s) kb_id=%s",
-            len(points),
-            user_id,
-            paper_id,
-            paper_title,
-            kb_id,
+            len(points), user_id, paper_id, paper_title, kb_id,
         )
         return len(points)
 
@@ -155,9 +149,7 @@ class QdrantStore:
                 meta["section_title"] = payload["section_title"]
             if payload.get("domain"):
                 meta["domain"] = payload["domain"]
-            docs.append(
-                Document(page_content=payload.get("page_content", ""), metadata=meta)
-            )
+            docs.append(Document(page_content=payload.get("page_content", ""), metadata=meta))
         return docs
 
     def get_user_papers(self, user_id: int) -> list[dict]:

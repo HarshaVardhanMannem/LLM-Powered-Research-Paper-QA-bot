@@ -9,13 +9,17 @@ class KnowledgeBaseCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     domain: str = Field(..., min_length=1, max_length=100)
-    chunking_strategy: str = Field(default="recursive", pattern="^(recursive|section|semantic)$")
+    chunking_strategy: str = Field(
+        default="recursive", pattern="^(recursive|section|semantic)$"
+    )
 
 
 class KnowledgeBaseUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
-    chunking_strategy: Optional[str] = Field(None, pattern="^(recursive|section|semantic)$")
+    chunking_strategy: Optional[str] = Field(
+        None, pattern="^(recursive|section|semantic)$"
+    )
 
 
 class KnowledgeBaseResponse(BaseModel):
@@ -34,4 +38,3 @@ class KnowledgeBaseResponse(BaseModel):
 
 class KBDocumentAdd(BaseModel):
     paper_id: Optional[str] = None
-

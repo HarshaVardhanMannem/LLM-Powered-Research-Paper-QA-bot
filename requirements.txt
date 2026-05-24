@@ -6,11 +6,13 @@ langchain-core>=0.3.0,<0.4.0
 langchain
 langchain-community
 langchain-nvidia-ai-endpoints
+langchain-experimental
 faiss-cpu==1.7.4
 numpy==1.24.3
 streamlit==1.31.1
 arxiv==2.0.0
 PyMuPDF==1.23.8
+pymupdf4llm>=0.0.7
 python-multipart==0.0.9
 aiohttp==3.12.13
 yarl==1.20.1

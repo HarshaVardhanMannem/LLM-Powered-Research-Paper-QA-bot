@@ -10,7 +10,7 @@ LABEL version="1.0"
 WORKDIR /app
 
 # Copy requirements file first for better layer caching
-COPY requirements.txt .
+COPY backend/requirements.txt ./requirements.txt
 
 # Install system dependencies and Python dependencies in one layer
 RUN apt-get update && \
@@ -21,7 +21,7 @@ RUN apt-get update && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire backend directory
-COPY fastapi_app/backend/ ./backend/
+COPY backend/ ./backend/
 
 # Set PYTHONPATH to include the backend directory
 ENV PYTHONPATH=/app/backend
@@ -44,7 +44,7 @@ LABEL version="1.0"
 WORKDIR /app
 
 # Copy package files first for better layer caching
-COPY fastapi_app/frontend/package*.json ./
+COPY frontend/package*.json ./
 
 # Install additional dependencies for node-gyp and npm dependencies in one layer
 RUN apk add --no-cache python3 make g++ && \
@@ -52,7 +52,7 @@ RUN apk add --no-cache python3 make g++ && \
     npm install --legacy-peer-deps --production=false
 
 # Copy frontend source code
-COPY fastapi_app/frontend/ .
+COPY frontend/ .
 
 # Create a non-root user and set permissions
 RUN addgroup -S appgroup && \

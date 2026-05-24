@@ -2,7 +2,7 @@
 
 import json
 
-from config.settings import (
+from backend.config.settings import (
     CHUNK_OVERLAP,
     CHUNK_SEPARATORS,
     CHUNK_SIZE,

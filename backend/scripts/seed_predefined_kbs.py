@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Seed predefined/system knowledge bases from config. Usage:
-  python -m scripts.seed_predefined_kbs [--ingest]
-  When --ingest is passed, also runs bulk ingest for each KB using PREDEFINED_KB_PAPER_IDS.
+python -m scripts.seed_predefined_kbs [--ingest]
+When --ingest is passed, also runs bulk ingest for each KB using PREDEFINED_KB_PAPER_IDS.
 """
 
 import argparse
@@ -44,12 +44,20 @@ def main() -> None:
 
     try:
         for domain in PREDEFINED_KB_DOMAINS:
-            existing = db.query(KnowledgeBase).filter(
-                KnowledgeBase.domain == domain,
-                KnowledgeBase.is_system == True,
-            ).first()
+            existing = (
+                db.query(KnowledgeBase)
+                .filter(
+                    KnowledgeBase.domain == domain,
+                    KnowledgeBase.is_system == True,
+                )
+                .first()
+            )
             if existing:
-                logger.info("Predefined KB for domain %s already exists (id=%s)", domain, existing.id)
+                logger.info(
+                    "Predefined KB for domain %s already exists (id=%s)",
+                    domain,
+                    existing.id,
+                )
                 continue
             kb = KnowledgeBase(
                 name=f"{domain} Knowledge Base",
@@ -70,10 +78,14 @@ def main() -> None:
             import tempfile
 
             for domain in PREDEFINED_KB_DOMAINS:
-                kb = db.query(KnowledgeBase).filter(
-                    KnowledgeBase.domain == domain,
-                    KnowledgeBase.is_system == True,
-                ).first()
+                kb = (
+                    db.query(KnowledgeBase)
+                    .filter(
+                        KnowledgeBase.domain == domain,
+                        KnowledgeBase.is_system == True,
+                    )
+                    .first()
+                )
                 if not kb:
                     continue
                 paper_ids = get_domain_paper_ids(domain)

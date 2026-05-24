@@ -6,7 +6,7 @@ from typing import Optional
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, PayloadSchemaType, VectorParams
 
-from config.qdrant_config import get_qdrant_config
+from backend.config.qdrant_config import get_qdrant_config
 
 logger = logging.getLogger(__name__)
 

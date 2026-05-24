@@ -28,7 +28,9 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
@@ -36,7 +38,10 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
     conversations: Mapped[list["ConversationMessage"]] = relationship(
@@ -56,8 +61,12 @@ class ConversationMessage(Base):
     __tablename__ = "conversation_messages"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    role: Mapped[str] = mapped_column(String(20), nullable=False)  # 'user' or 'assistant'
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # 'user' or 'assistant'
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -77,12 +86,16 @@ class Feedback(Base):
     )
     question: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
-    feedback_type: Mapped[str] = mapped_column(String(20), nullable=False)  # 'like' or 'dislike'
+    feedback_type: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # 'like' or 'dislike'
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    user: Mapped[Optional["User"]] = relationship("User", back_populates="feedback_entries")
+    user: Mapped[Optional["User"]] = relationship(
+        "User", back_populates="feedback_entries"
+    )
 
 
 class KnowledgeBase(Base):
@@ -105,12 +118,19 @@ class KnowledgeBase(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
-    owner: Mapped[Optional["User"]] = relationship("User", back_populates="knowledge_bases")
+    owner: Mapped[Optional["User"]] = relationship(
+        "User", back_populates="knowledge_bases"
+    )
     documents: Mapped[list["KnowledgeBaseDocument"]] = relationship(
-        "KnowledgeBaseDocument", back_populates="knowledge_base", cascade="all, delete-orphan"
+        "KnowledgeBaseDocument",
+        back_populates="knowledge_base",
+        cascade="all, delete-orphan",
     )
 
 

@@ -2,7 +2,7 @@
 
 from src.embedding.embeddings import get_embedder
 
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 
 
 def create_default_faiss():

@@ -1,3 +1,9 @@
+# App services only. Run PostgreSQL and Qdrant from separate folders:
+#   docker/postgres:  cd docker/postgres && docker-compose up -d
+#   docker/qdrant:   cd docker/qdrant && docker-compose up -d
+# In .env use POSTGRES_HOST=localhost, QDRANT_HOST=localhost (or host.docker.internal
+# if this compose runs the backend in Docker and DBs run on the host).
+
 services:
   backend:
     build:
@@ -12,6 +18,14 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/backend
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-research_qa}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
+      - QDRANT_HOST=${QDRANT_HOST:-localhost}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
     networks:
       - app-network
 

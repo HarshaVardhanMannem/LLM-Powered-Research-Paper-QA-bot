@@ -2,7 +2,7 @@
 
 from config.settings import SYSTEM_MESSAGE
 
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 
 def create_chat_prompt():

@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState, useEffect } from 'react'
-import { Box, Snackbar, Alert, ThemeProvider, createTheme, CssBaseline, Container } from '@mui/material'
+import { Box, Snackbar, Alert, ThemeProvider, createTheme, CssBaseline, Container, CircularProgress } from '@mui/material'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
@@ -8,12 +8,15 @@ import MessageInput from './components/MessageInput'
 import PaperDetails from './components/PaperDetails'
 import PaperStats from './components/PaperStats'
 import ThemeToggle from './components/ThemeToggle'
+import AuthPage from './components/AuthPage'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { useApi } from './hooks/useApi'
 import { useSnackbar } from './hooks/useSnackbar'
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000'
 
-function App () {
+function AppContent () {
+  const { user, loading: authLoading, logout } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -27,7 +30,6 @@ function App () {
   const { snackbar, showSnackbar, handleCloseSnackbar } = useSnackbar()
   const api = useApi(API_BASE_URL, showSnackbar)
 
-  // Create enhanced theme with modern styling
   const theme = createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
@@ -50,63 +52,23 @@ function App () {
         primary: darkMode ? '#f1f5f9' : '#1e293b',
         secondary: darkMode ? '#94a3b8' : '#64748b'
       },
-      success: {
-        main: '#10b981',
-        light: '#34d399',
-        dark: '#059669'
-      },
-      error: {
-        main: '#ef4444',
-        light: '#f87171',
-        dark: '#dc2626'
-      },
-      warning: {
-        main: '#f59e0b',
-        light: '#fbbf24',
-        dark: '#d97706'
-      },
-      info: {
-        main: '#3b82f6',
-        light: '#60a5fa',
-        dark: '#2563eb'
-      }
+      success: { main: '#10b981', light: '#34d399', dark: '#059669' },
+      error: { main: '#ef4444', light: '#f87171', dark: '#dc2626' },
+      warning: { main: '#f59e0b', light: '#fbbf24', dark: '#d97706' },
+      info: { main: '#3b82f6', light: '#60a5fa', dark: '#2563eb' }
     },
     typography: {
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-      h1: {
-        fontWeight: 700,
-        letterSpacing: '-0.025em'
-      },
-      h2: {
-        fontWeight: 600,
-        letterSpacing: '-0.025em'
-      },
-      h3: {
-        fontWeight: 600,
-        letterSpacing: '-0.025em'
-      },
-      h4: {
-        fontWeight: 600,
-        letterSpacing: '-0.025em'
-      },
-      h5: {
-        fontWeight: 600,
-        letterSpacing: '-0.025em'
-      },
-      h6: {
-        fontWeight: 600,
-        letterSpacing: '-0.025em'
-      },
-      body1: {
-        lineHeight: 1.6
-      },
-      body2: {
-        lineHeight: 1.6
-      }
+      h1: { fontWeight: 700, letterSpacing: '-0.025em' },
+      h2: { fontWeight: 600, letterSpacing: '-0.025em' },
+      h3: { fontWeight: 600, letterSpacing: '-0.025em' },
+      h4: { fontWeight: 600, letterSpacing: '-0.025em' },
+      h5: { fontWeight: 600, letterSpacing: '-0.025em' },
+      h6: { fontWeight: 600, letterSpacing: '-0.025em' },
+      body1: { lineHeight: 1.6 },
+      body2: { lineHeight: 1.6 }
     },
-    shape: {
-      borderRadius: 12
-    },
+    shape: { borderRadius: 12 },
     components: {
       MuiButton: {
         styleOverrides: {
@@ -115,31 +77,18 @@ function App () {
             fontWeight: 500,
             borderRadius: 8,
             boxShadow: 'none',
-            '&:hover': {
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-            }
+            '&:hover': { boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' }
           },
           contained: {
             background: 'linear-gradient(135deg, #6366f1 0%, #818cf8 100%)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)'
-            }
+            '&:hover': { background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)' }
           }
         }
       },
-      MuiPaper: {
-        styleOverrides: {
-          root: {
-            backgroundImage: 'none'
-          }
-        }
-      },
+      MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
       MuiCard: {
         styleOverrides: {
-          root: {
-            borderRadius: 16,
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-          }
+          root: { borderRadius: 16, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }
         }
       },
       MuiTextField: {
@@ -147,13 +96,8 @@ function App () {
           root: {
             '& .MuiOutlinedInput-root': {
               borderRadius: 12,
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#6366f1'
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#6366f1',
-                borderWidth: 2
-              }
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#6366f1' },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#6366f1', borderWidth: 2 }
             }
           }
         }
@@ -173,10 +117,13 @@ function App () {
   })
 
   useEffect(() => {
-    checkApiHealth()
-    fetchPapers()
-    fetchFeedbackStats()
-  }, [])
+    if (user) {
+      checkApiHealth()
+      fetchPapers()
+      fetchFeedbackStats()
+      loadConversationHistory()
+    }
+  }, [user])
 
   const checkApiHealth = async () => {
     try {
@@ -203,6 +150,17 @@ function App () {
       setFeedbackStats(stats)
     } catch (error) {
       showSnackbar('Error fetching feedback stats', 'error')
+    }
+  }
+
+  const loadConversationHistory = async () => {
+    try {
+      const conversations = await api.fetchConversations()
+      if (conversations && conversations.length > 0) {
+        setMessages(conversations.map(c => ({ role: c.role, content: c.content })))
+      }
+    } catch (error) {
+      // Conversation history is optional
     }
   }
 
@@ -267,6 +225,34 @@ function App () {
     }
   }
 
+  const handleLogout = () => {
+    logout()
+    setMessages([])
+    setPapers([])
+    setFeedbackStats({ likes: 0, dislikes: 0 })
+    showSnackbar('Signed out successfully')
+  }
+
+  if (authLoading) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', bgcolor: 'background.default' }}>
+          <CircularProgress size={48} />
+        </Box>
+      </ThemeProvider>
+    )
+  }
+
+  if (!user) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthPage />
+      </ThemeProvider>
+    )
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -274,13 +260,7 @@ function App () {
         {!apiAvailable && (
           <Alert
             severity='error'
-            sx={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 9999
-            }}
+            sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999 }}
           >
             Backend API is not available. Please ensure the server is running.
           </Alert>
@@ -288,6 +268,8 @@ function App () {
 
         <Header
           onMenuClick={() => setDrawerOpen(true)}
+          user={user}
+          onLogout={handleLogout}
           rightContent={
             <ThemeToggle onToggle={() => setDarkMode(!darkMode)} />
           }
@@ -303,7 +285,6 @@ function App () {
           onPaperSelect={setSelectedPaper}
         />
 
-        {/* Main content and stats sidebar layout */}
         <Box sx={{
           flexGrow: 1,
           display: 'flex',
@@ -328,7 +309,6 @@ function App () {
           }
         }}
         >
-          {/* Main chat area */}
           <Container
             component='main'
             maxWidth='md'
@@ -347,7 +327,6 @@ function App () {
               loading={loading}
               onFeedback={handleFeedback}
             />
-
             <MessageInput
               value={input}
               onChange={setInput}
@@ -356,7 +335,6 @@ function App () {
             />
           </Container>
 
-          {/* Enhanced Stats sidebar */}
           <Box sx={{
             display: { xs: 'none', lg: 'flex' },
             flexDirection: 'column',
@@ -402,6 +380,14 @@ function App () {
         </Snackbar>
       </Box>
     </ThemeProvider>
+  )
+}
+
+function App () {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 

@@ -1,18 +1,27 @@
 // src/components/Header.js
-import React from 'react'
+import React, { useState } from 'react'
 import {
   AppBar,
   Toolbar,
   Typography,
   IconButton,
   Box,
+  Menu,
+  MenuItem,
+  Avatar,
+  Chip,
+  ListItemIcon,
+  Divider,
   useTheme
 } from '@mui/material'
 import {
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Logout,
+  Person
 } from '@mui/icons-material'
 
-const Header = ({ onMenuClick, rightContent }) => {
+const Header = ({ onMenuClick, rightContent, user, onLogout }) => {
+  const [anchorEl, setAnchorEl] = useState(null)
   const theme = useTheme()
 
   return (
@@ -81,6 +90,47 @@ const Header = ({ onMenuClick, rightContent }) => {
         }}
         >
           {rightContent}
+
+          {user && (
+            <>
+              <Chip
+                avatar={
+                  <Avatar sx={{ bgcolor: '#6366f1', width: 28, height: 28, fontSize: 14 }}>
+                    {(user.full_name || user.email || '?')[0].toUpperCase()}
+                  </Avatar>
+                }
+                label={user.full_name || user.email}
+                variant='outlined'
+                onClick={(e) => setAnchorEl(e.currentTarget)}
+                sx={{
+                  ml: 1,
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+                  cursor: 'pointer',
+                  '&:hover': { borderColor: '#6366f1' }
+                }}
+              />
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                PaperProps={{
+                  sx: { mt: 1, borderRadius: 2, minWidth: 180 }
+                }}
+              >
+                <MenuItem disabled>
+                  <ListItemIcon><Person fontSize='small' /></ListItemIcon>
+                  {user.email}
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={() => { setAnchorEl(null); onLogout() }}>
+                  <ListItemIcon><Logout fontSize='small' /></ListItemIcon>
+                  Sign Out
+                </MenuItem>
+              </Menu>
+            </>
+          )}
         </Box>
       </Toolbar>
     </AppBar>

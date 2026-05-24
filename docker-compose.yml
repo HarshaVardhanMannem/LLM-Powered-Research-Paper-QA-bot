@@ -13,7 +13,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./fastapi_app/backend:/app/backend
+      - ./backend:/app/backend
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/backend
@@ -37,8 +37,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./fastapi_app/frontend/src:/app/src
-      - ./fastapi_app/frontend/public:/app/public
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     environment:
       - NODE_ENV=development
       - REACT_APP_API_URL=http://localhost:8000

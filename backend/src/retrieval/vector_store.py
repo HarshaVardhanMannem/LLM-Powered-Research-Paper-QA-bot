@@ -1,6 +1,6 @@
 """Vector store creation and management utilities."""
 
-from src.embedding.embeddings import get_embedder
+from backend.src.embedding.embeddings import get_embedder
 
 from langchain_community.vectorstores import FAISS
 

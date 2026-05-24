@@ -1,6 +1,6 @@
 """Chat prompt templates for the QA system."""
 
-from config.settings import SYSTEM_MESSAGE
+from backend.config.settings import SYSTEM_MESSAGE
 
 from langchain_core.prompts import ChatPromptTemplate
 

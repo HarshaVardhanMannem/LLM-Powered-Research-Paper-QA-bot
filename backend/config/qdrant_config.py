@@ -35,5 +35,6 @@ def get_qdrant_config() -> QdrantConfig:
         port=int(os.getenv("QDRANT_PORT", "6333")),
         collection_name=os.getenv("QDRANT_COLLECTION_NAME", "research_papers"),
         vector_size=int(os.getenv("QDRANT_VECTOR_SIZE", str(DEFAULT_VECTOR_SIZE))),
-        use_https=os.getenv("QDRANT_USE_HTTPS", "false").lower() in ("1", "true", "yes"),
+        use_https=os.getenv("QDRANT_USE_HTTPS", "false").lower()
+        in ("1", "true", "yes"),
     )

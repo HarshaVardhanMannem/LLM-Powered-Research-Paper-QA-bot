@@ -1,6 +1,6 @@
 """Embedding utilities for the QA system."""
 
-from config.settings import EMBEDDING_MODEL
+from backend.config.settings import EMBEDDING_MODEL
 
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 

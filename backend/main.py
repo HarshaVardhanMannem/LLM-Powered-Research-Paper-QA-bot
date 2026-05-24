@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, List, Optional
 
-from config.settings import LLM_MODEL, PAPER_IDS
-from src.auth.deps import get_current_user
-from src.data.document_loader import (
+from backend.config.settings import LLM_MODEL, PAPER_IDS
+from backend.src.auth.deps import get_current_user
+from backend.src.data.document_loader import (
     create_document_chunks,
     create_metadata_chunks,
     create_text_splitter,
@@ -16,18 +16,18 @@ from src.data.document_loader import (
     load_single_arxiv_document,
     preprocess_documents,
 )
-from src.db.models import User
-from src.db.session import get_db, init_db
-from src.prompts.chat_prompts import create_chat_prompt
-from src.retrieval.qdrant_setup import init_qdrant_collection
-from src.retrieval.qdrant_store import QdrantStore
-from src.auth.routes import router as auth_router
-from src.knowledge.routes import router as kb_router
-from src.utils.conversation_store import (
+from backend.src.db.models import User
+from backend.src.db.session import get_db, init_db
+from backend.src.prompts.chat_prompts import create_chat_prompt
+from backend.src.retrieval.qdrant_setup import init_qdrant_collection
+from backend.src.retrieval.qdrant_store import QdrantStore
+from backend.src.auth.routes import router as auth_router
+from backend.src.knowledge.routes import router as kb_router
+from backend.src.utils.conversation_store import (
     get_recent_conversation_history,
     save_conversation_turn,
 )
-from src.utils.feedback_store_postgres import FeedbackStorePostgres
+from backend.src.utils.feedback_store_postgres import FeedbackStorePostgres
 
 import fitz  # PyMuPDF
 from dotenv import load_dotenv

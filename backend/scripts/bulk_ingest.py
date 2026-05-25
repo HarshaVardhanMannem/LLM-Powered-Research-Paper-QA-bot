@@ -44,6 +44,16 @@ logger = logging.getLogger(__name__)
 BATCH_SIZE = 64
 
 
+def chunk_document(chunker, doc):
+    if hasattr(chunker, "split_documents"):
+        chunks = chunker.split_documents([doc])
+    elif hasattr(chunker, "transform_documents"):
+        chunks = chunker.transform_documents([doc])
+    else:
+        raise ValueError("Chunker has no split/transform method")
+    return [c for c in chunks if getattr(c, "page_content", "").strip()]
+
+
 def load_kb(db, kb_id: int) -> KnowledgeBase | None:
     return db.get(KnowledgeBase, kb_id)
 
@@ -65,11 +75,7 @@ def process_pdf(
     doc = extract_pdf_with_structure(contents, path.name, use_structure=use_structure)
     title = doc.metadata.get("Title", path.stem)
     source = str(path)
-    if hasattr(chunker, "split_documents"):
-        chunks = chunker.split_documents([doc])
-    else:
-        chunks = chunker.transform_documents([doc])
-    valid = [c for c in chunks if getattr(c, "page_content", "").strip()]
+    valid = chunk_document(chunker, doc)
     if not valid:
         return 0, paper_id, title
     store.add_documents(
@@ -105,11 +111,7 @@ def process_arxiv(
     doc = processed[0][0]
     title = getattr(doc, "metadata", {}).get("Title", "Untitled")
     source = f"arxiv:{arxiv_id}"
-    if hasattr(chunker, "split_documents"):
-        chunks = chunker.split_documents([doc])
-    else:
-        chunks = chunker.transform_documents([doc])
-    valid = [c for c in chunks if getattr(c, "page_content", "").strip()]
+    valid = chunk_document(chunker, doc)
     if not valid:
         return 0, arxiv_id, title
     store.add_documents(

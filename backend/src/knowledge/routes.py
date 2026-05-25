@@ -227,6 +227,8 @@ async def add_document_to_kb(
             title = getattr(doc, "metadata", {}).get("Title", "Untitled")
             source = f"arxiv:{paper_id}"
         else:
+            if file is None:
+                raise HTTPException(status_code=400, detail="File upload required")
             if not file.filename.lower().endswith(".pdf"):
                 raise HTTPException(status_code=400, detail="Only PDF files allowed")
             contents = await file.read()

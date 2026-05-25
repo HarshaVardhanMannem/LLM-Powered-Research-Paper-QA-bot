@@ -1,18 +1,15 @@
 import hashlib
 import logging
 import sys
-import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, List, Optional
 
-from backend.config.settings import LLM_MODEL, PAPER_IDS
+from backend.config.settings import LLM_MODEL
 from backend.src.auth.deps import get_current_user
 from backend.src.data.document_loader import (
     create_document_chunks,
-    create_metadata_chunks,
     create_text_splitter,
-    load_arxiv_documents,
     load_single_arxiv_document,
     preprocess_documents,
 )
@@ -31,7 +28,7 @@ from backend.src.utils.feedback_store_postgres import FeedbackStorePostgres
 
 import fitz  # PyMuPDF
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_core.documents import Document
 from langchain_nvidia_ai_endpoints import ChatNVIDIA

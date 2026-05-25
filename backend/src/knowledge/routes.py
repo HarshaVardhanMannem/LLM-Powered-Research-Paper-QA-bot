@@ -16,7 +16,12 @@ from backend.src.data.document_loader import (
     preprocess_documents,
 )
 from backend.src.data.extraction import extract_pdf_with_structure
-from backend.src.db.models import ChunkingStrategy, KnowledgeBase, KnowledgeBaseDocument, User
+from backend.src.db.models import (
+    ChunkingStrategy,
+    KnowledgeBase,
+    KnowledgeBaseDocument,
+    User,
+)
 from backend.src.db.session import get_db
 from backend.src.embedding.embeddings import get_embedder
 from backend.src.knowledge.schemas import (
@@ -38,7 +43,9 @@ def _get_store() -> QdrantStore:
     return res["qdrant_store"]
 
 
-def _kb_to_response(kb: KnowledgeBase, db: Session, store: QdrantStore) -> KnowledgeBaseResponse:
+def _kb_to_response(
+    kb: KnowledgeBase, db: Session, store: QdrantStore
+) -> KnowledgeBaseResponse:
     docs = store.get_kb_documents(kb.id)
     return KnowledgeBaseResponse(
         id=kb.id,
@@ -72,7 +79,8 @@ async def list_knowledge_bases(
     rows = (
         db.execute(
             select(KnowledgeBase).where(
-                (KnowledgeBase.is_system == True) | (KnowledgeBase.owner_id == current_user.id)
+                KnowledgeBase.is_system.is_(True)
+                | (KnowledgeBase.owner_id == current_user.id)
             )
         )
         .scalars()
@@ -209,7 +217,9 @@ async def add_document_to_kb(
 
             new_doc = load_single_arxiv_document(paper_id)
             if not new_doc or len(new_doc) == 0:
-                raise HTTPException(status_code=400, detail=f"Failed to load paper {paper_id}")
+                raise HTTPException(
+                    status_code=400, detail=f"Failed to load paper {paper_id}"
+                )
             processed = preprocess_documents([new_doc])
             if not processed or not processed[0]:
                 raise HTTPException(status_code=400, detail="No document content")
@@ -227,8 +237,10 @@ async def add_document_to_kb(
             paper_id = f"upload-{content_hash[:12]}"
             if store.document_exists_in_kb(kb.id, paper_id):
                 docs = store.get_kb_documents(kb.id)
-                return {"message": f"File already in KB", "documents": docs}
-            doc = extract_pdf_with_structure(contents, file.filename, use_structure=use_structure)
+                return {"message": "File already in KB", "documents": docs}
+            doc = extract_pdf_with_structure(
+                contents, file.filename, use_structure=use_structure
+            )
             title = doc.metadata.get("Title", file.filename)
             source = file.filename
 
@@ -237,7 +249,9 @@ async def add_document_to_kb(
         elif hasattr(chunker, "transform_documents"):
             chunks = chunker.transform_documents([doc])
         else:
-            raise HTTPException(status_code=500, detail="Chunker has no split/transform method")
+            raise HTTPException(
+                status_code=500, detail="Chunker has no split/transform method"
+            )
 
         valid = [c for c in chunks if getattr(c, "page_content", "").strip()]
         if not valid:

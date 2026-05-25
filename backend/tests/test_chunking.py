@@ -19,7 +19,11 @@ def test_section_chunker_merges_metadata():
 
 def test_section_chunker_falls_back_when_header_split_fails(monkeypatch):
     chunker = SectionChunker(chunk_size=1000, chunk_overlap=0, min_chunk_length=1)
-    monkeypatch.setattr(chunker._header_splitter, "split_text", lambda *_: (_ for _ in ()).throw(ValueError("fail")))
+    monkeypatch.setattr(
+        chunker._header_splitter,
+        "split_text",
+        lambda *_: (_ for _ in ()).throw(ValueError("fail")),
+    )
 
     doc = Document(page_content="# Title\n\nBody text.", metadata={"source": "x"})
     chunks = chunker.transform_documents([doc])

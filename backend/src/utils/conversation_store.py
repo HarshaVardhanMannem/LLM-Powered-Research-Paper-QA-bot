@@ -1,10 +1,8 @@
 """PostgreSQL-backed conversation history storage."""
 
-from typing import Optional
-
 from sqlalchemy.orm import Session
 
-from backend.src.db.models import ConversationMessage, User
+from backend.src.db.models import ConversationMessage
 
 
 def save_conversation_turn(

@@ -73,7 +73,10 @@ def process_pdf(
     if store.document_exists_in_kb(kb.id, paper_id):
         return 0, paper_id, path.stem
     doc = extract_pdf_with_structure(contents, path.name, use_structure=use_structure)
-    title = doc.metadata.get("Title", path.stem)
+    if isinstance(doc, list):
+        doc = doc[0]
+    doc_meta = getattr(doc, "metadata", {}) or {}
+    title = doc_meta.get("Title", path.stem)
     source = str(path)
     valid = chunk_document(chunker, doc)
     if not valid:
@@ -154,7 +157,7 @@ def main() -> None:
         embeddings=embeddings,
     )
 
-    docs_to_process: list[tuple[str, str | None]] = []  # (type, path_or_id)
+    docs_to_process: list[tuple[str, str]] = []  # (type, path_or_id)
     if args.input_dir:
         if not args.input_dir.is_dir():
             logger.error("Input dir %s is not a directory", args.input_dir)
@@ -162,6 +165,9 @@ def main() -> None:
         for p in sorted(args.input_dir.glob("**/*.pdf")):
             docs_to_process.append(("pdf", str(p)))
     else:
+        if args.manifest is None:
+            logger.error("Manifest path is required")
+            sys.exit(1)
         with args.manifest.open(newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:

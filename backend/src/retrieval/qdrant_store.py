@@ -46,7 +46,9 @@ class QdrantStore:
         domain: Optional[str] = None,
     ) -> int:
         """Embed and upsert document chunks with user/paper or KB metadata."""
-        valid = [c for c in chunks if hasattr(c, "page_content") and c.page_content.strip()]
+        valid = [
+            c for c in chunks if hasattr(c, "page_content") and c.page_content.strip()
+        ]
         if not valid:
             logger.warning("No valid chunks to add")
             return 0
@@ -84,7 +86,11 @@ class QdrantStore:
         self.client.upsert(collection_name=self.collection_name, points=points)
         logger.info(
             "Added %d chunks for user=%s paper=%s (%s) kb_id=%s",
-            len(points), user_id, paper_id, paper_title, kb_id,
+            len(points),
+            user_id,
+            paper_id,
+            paper_title,
+            kb_id,
         )
         return len(points)
 
@@ -149,8 +155,18 @@ class QdrantStore:
                 meta["section_title"] = payload["section_title"]
             if payload.get("domain"):
                 meta["domain"] = payload["domain"]
-            docs.append(Document(page_content=payload.get("page_content", ""), metadata=meta))
+            docs.append(
+                Document(page_content=payload.get("page_content", ""), metadata=meta)
+            )
         return docs
+
+    def _collect_distinct_papers(self, points) -> list[dict]:
+        seen = {}
+        for point in points:
+            pid = point.payload.get("paper_id", "")
+            if pid and pid not in seen:
+                seen[pid] = point.payload.get("paper_title", "Untitled")
+        return [{"id": pid, "title": title} for pid, title in seen.items()]
 
     def get_user_papers(self, user_id: int) -> list[dict]:
         """Get distinct papers uploaded by a user."""
@@ -163,13 +179,7 @@ class QdrantStore:
             with_payload=["paper_id", "paper_title"],
         )
 
-        seen = {}
-        for point in results[0]:
-            pid = point.payload.get("paper_id", "")
-            if pid and pid not in seen:
-                seen[pid] = point.payload.get("paper_title", "Untitled")
-
-        return [{"id": pid, "title": title} for pid, title in seen.items()]
+        return self._collect_distinct_papers(results[0])
 
     def paper_exists_for_user(self, user_id: int, paper_id: str) -> bool:
         """Check if a paper already exists for a user."""
@@ -208,12 +218,7 @@ class QdrantStore:
             limit=10000,
             with_payload=["paper_id", "paper_title"],
         )
-        seen = {}
-        for point in results[0]:
-            pid = point.payload.get("paper_id", "")
-            if pid and pid not in seen:
-                seen[pid] = point.payload.get("paper_title", "Untitled")
-        return [{"id": pid, "title": title} for pid, title in seen.items()]
+        return self._collect_distinct_papers(results[0])
 
     def delete_kb(self, kb_id: int) -> None:
         """Delete all chunks for a knowledge base."""

@@ -22,7 +22,19 @@ class Base(DeclarativeBase):
     pass
 
 
-class User(Base):
+class TimestampMixin:
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class User(TimestampMixin, Base):
     """User account for authentication."""
 
     __tablename__ = "users"
@@ -34,15 +46,6 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
 
     conversations: Mapped[list["ConversationMessage"]] = relationship(
         "ConversationMessage", back_populates="user", cascade="all, delete-orphan"
@@ -98,7 +101,7 @@ class Feedback(Base):
     )
 
 
-class KnowledgeBase(Base):
+class KnowledgeBase(TimestampMixin, Base):
     """Knowledge base (predefined or user-created) for document storage and retrieval."""
 
     __tablename__ = "knowledge_bases"
@@ -113,15 +116,6 @@ class KnowledgeBase(Base):
     is_system: Mapped[bool] = mapped_column(default=False, nullable=False)
     chunking_strategy: Mapped[ChunkingStrategy] = mapped_column(
         Enum(ChunkingStrategy), default=ChunkingStrategy.recursive, nullable=False
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
     )
 
     owner: Mapped[Optional["User"]] = relationship(

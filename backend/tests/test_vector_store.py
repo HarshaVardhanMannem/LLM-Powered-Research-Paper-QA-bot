@@ -80,7 +80,9 @@ def test_aggregate_vector_stores_merges(monkeypatch):
     store_b = DummyStore()
     store_c = DummyStore()
 
-    aggregated = vector_store_module.aggregate_vector_stores([store_a, store_b, store_c])
+    aggregated = vector_store_module.aggregate_vector_stores(
+        [store_a, store_b, store_c]
+    )
 
     assert aggregated is store_a
     assert store_a.merged_from == [store_b, store_c]

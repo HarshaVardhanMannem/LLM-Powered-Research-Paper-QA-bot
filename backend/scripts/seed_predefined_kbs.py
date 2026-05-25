@@ -5,6 +5,7 @@
 """
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -23,8 +24,6 @@ from backend.config.kb_config import (  # noqa: E402
 )
 from backend.src.db.models import ChunkingStrategy, KnowledgeBase  # noqa: E402
 from backend.src.db.session import SessionLocal, init_db  # noqa: E402
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,

@@ -291,8 +291,8 @@ flowchart TD
 
 ### 1. Clone the Repository
    ```bash
-git clone https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot.git
-cd LLM-Powered-Research-Paper-QA-Bot
+git clone https://github.com/HarshaVardhanMannem/LLM-Powered-Research-Paper-QA-bot.git
+cd LLM-Powered-Research-Paper-QA-bot
    ```
 
 ### 2. Environment Setup
@@ -377,6 +377,47 @@ PAPER_IDS = [
 - API endpoint configuration in `src/App.js`
 - Theme customization in Material-UI theme provider
 - Component styling and layout adjustments
+
+### Environment Variables
+Use `.env.example` as the baseline and supply values via a secrets manager in production.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NVIDIA_API_KEY` | Yes | NVIDIA AI endpoints access for embeddings and generation |
+| `JWT_SECRET_KEY` | Yes | Signs auth tokens; set a strong secret in production |
+| `POSTGRES_DB` | Optional | Database name when using Postgres |
+| `POSTGRES_HOST` | Optional | Postgres host |
+| `POSTGRES_PORT` | Optional | Postgres port |
+| `POSTGRES_USER` | Optional | Postgres username |
+| `POSTGRES_PASSWORD` | Optional | Postgres password |
+| `EXTRACTION_MODE` | Optional | Controls extraction strategy (e.g., `structure`) |
+| `PREDEFINED_KB_DOMAINS` | Optional | Seed knowledge base domain list |
+| `PREDEFINED_KB_PAPER_IDS` | Optional | JSON mapping of domain -> arXiv IDs |
+| `QDRANT_COLLECTION_NAME` | Optional | Qdrant collection name |
+| `QDRANT_HOST` | Optional | Qdrant host |
+| `QDRANT_PORT` | Optional | Qdrant port |
+| `QDRANT_VECTOR_SIZE` | Optional | Vector size for Qdrant collections |
+
+## ✅ Production Readiness (Open Source)
+This repository provides a production-capable baseline, but you must complete operational hardening before exposing it publicly.
+
+### Security & Access
+- Store `NVIDIA_API_KEY` and `JWT_SECRET_KEY` in a secrets manager (never commit `.env`).
+- Terminate TLS at your ingress and restrict CORS to trusted origins.
+- Apply authentication, authorization, and rate limiting for public deployments.
+
+### Data & Persistence
+- Use managed Postgres or the docker-compose Postgres service for durable metadata.
+- Mount persistent volumes for vector stores (FAISS/Qdrant) and uploaded files.
+- Schedule regular backups for Postgres and vector storage.
+
+### Reliability & Scaling
+- Run the API with multiple workers and define CPU/memory limits in your runtime.
+- Use horizontal scaling for the frontend and stateless API instances.
+
+### Observability
+- Centralize logs and enable metrics/tracing in your platform.
+- Add alerting for elevated error rates, latency, and storage usage.
 
 ## 📡 API Endpoints
 
@@ -470,9 +511,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot/discussions)
-- **Documentation**: [Wiki](https://github.com/yourusername/LLM-Powered-Research-Paper-QA-Bot/wiki)
+- **Issues**: [GitHub Issues](https://github.com/HarshaVardhanMannem/LLM-Powered-Research-Paper-QA-bot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/HarshaVardhanMannem/LLM-Powered-Research-Paper-QA-bot/discussions)
+- **Documentation**: [Wiki](https://github.com/HarshaVardhanMannem/LLM-Powered-Research-Paper-QA-bot/wiki)
 
 ## 🔮 Roadmap
 

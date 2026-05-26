@@ -384,7 +384,7 @@ Use `.env.example` as the baseline and supply values via a secrets manager in pr
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `NVIDIA_API_KEY` | Yes | NVIDIA AI endpoints access for embeddings and generation |
-| `JWT_SECRET_KEY` | Yes (prod) | Signs auth tokens; set a strong secret in production |
+| `JWT_SECRET_KEY` | Yes | Signs auth tokens; set a strong secret in production |
 | `POSTGRES_DB` | Optional | Database name when using Postgres |
 | `POSTGRES_HOST` | Optional | Postgres host |
 | `POSTGRES_PORT` | Optional | Postgres port |

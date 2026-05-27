@@ -34,7 +34,7 @@ A sophisticated AI-powered question-answering system that allows users to intera
 - **Usage Analytics**: Track interaction patterns and popular queries
 - **Performance Metrics**: Monitor system performance and response quality
 
-### 🚀 **Developer Features**
+### **Developer Features**
 - **RESTful API**: Complete FastAPI backend with comprehensive endpoints
 - **Docker Support**: Containerized deployment with docker-compose
 - **Code Quality**: Automated linting with Black, flake8, and isort

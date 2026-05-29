@@ -15,11 +15,19 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
 
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === "object" && "response" in err) {
+      const response = (err as { response?: { data?: { detail?: string } } }).response;
+      return response?.data?.detail || fallback;
+    }
+    return fallback;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setLoading(true);
     try { await login(email, password); }
-    catch (err: any) { setError(err.response?.data?.detail || "Login failed."); }
+    catch (err) { setError(getErrorMessage(err, "Login failed.")); }
     finally { setLoading(false); }
   };
 
@@ -30,7 +38,7 @@ export default function AuthPage() {
       await register(email, password, fullName);
       setSuccess("Account created! You can now sign in.");
       setTab("login"); setPassword("");
-    } catch (err: any) { setError(err.response?.data?.detail || "Registration failed."); }
+    } catch (err) { setError(getErrorMessage(err, "Registration failed.")); }
     finally { setLoading(false); }
   };
 

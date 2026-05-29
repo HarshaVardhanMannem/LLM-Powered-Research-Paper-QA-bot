@@ -10,12 +10,17 @@ const knowledgeBases = [
 ];
 
 describe("KBSelector", () => {
-  it("selects a knowledge base", async () => {
+  const setup = (selectedIds: number[]) => {
     const onChange = vi.fn();
     render(
-      <KBSelector knowledgeBases={knowledgeBases} selectedIds={[]} onChange={onChange} />
+      <KBSelector knowledgeBases={knowledgeBases} selectedIds={selectedIds} onChange={onChange} />
     );
     const user = userEvent.setup();
+    return { onChange, user };
+  };
+
+  it("selects a knowledge base", async () => {
+    const { onChange, user } = setup([]);
 
     await user.click(screen.getByRole("button", { name: "My Papers" }));
     await user.click(screen.getByText("Physics"));
@@ -24,11 +29,7 @@ describe("KBSelector", () => {
   });
 
   it("clears selection when choosing My Papers", async () => {
-    const onChange = vi.fn();
-    render(
-      <KBSelector knowledgeBases={knowledgeBases} selectedIds={[1]} onChange={onChange} />
-    );
-    const user = userEvent.setup();
+    const { onChange, user } = setup([1]);
 
     await user.click(screen.getByRole("button", { name: "Physics" }));
     await user.click(screen.getByRole("button", { name: "My Papers" }));

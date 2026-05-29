@@ -66,6 +66,7 @@ export default function AuthPage() {
             {(["login", "register"] as const).map((t) => (
               <button
                 key={t}
+                type="button"
                 onClick={() => { setTab(t); setError(""); setSuccess(""); }}
                 className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
                   tab === t

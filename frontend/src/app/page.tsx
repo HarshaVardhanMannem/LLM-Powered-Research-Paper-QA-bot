@@ -59,8 +59,9 @@ export default function Home() {
       );
       setMessages((prev) => [...prev, { role: "assistant", content: res.response }]);
       setPapers(res.papers);
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || "Error getting response";
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      const msg = error.response?.data?.detail || "Error getting response";
       setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${msg}`, isError: true }]);
       showToast(msg, "error");
     } finally { setLoading(false); }
@@ -72,7 +73,11 @@ export default function Home() {
       setPapers(res.papers);
       showToast(res.message);
       setSidebarOpen(false);
-    } catch (err: any) { showToast(err.response?.data?.detail || "Error adding paper", "error"); throw err; }
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast(error.response?.data?.detail || "Error adding paper", "error");
+      throw err;
+    }
   };
 
   const handleUpload = async (file: File) => {
@@ -81,7 +86,11 @@ export default function Home() {
       setPapers(res.papers);
       showToast(res.message || "Uploaded successfully");
       setSidebarOpen(false);
-    } catch (err: any) { showToast(err.response?.data?.detail || "Upload failed", "error"); throw err; }
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast(error.response?.data?.detail || "Upload failed", "error");
+      throw err;
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -89,7 +98,10 @@ export default function Home() {
       const res = await api.deletePaper(id);
       setPapers(res.papers);
       showToast("Paper deleted");
-    } catch (err: any) { showToast(err.response?.data?.detail || "Delete failed", "error"); }
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast(error.response?.data?.detail || "Delete failed", "error");
+    }
   };
 
   const handleFeedback = async (q: string, a: string, type: string) => {

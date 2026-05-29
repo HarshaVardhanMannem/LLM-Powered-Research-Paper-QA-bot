@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+  statuses: write
+
 jobs:
   lint:
     name: Lint Code Base
@@ -23,6 +27,9 @@ jobs:
           VALIDATE_NATURAL_LANGUAGE: false
           VALIDATE_DOCKERFILE_HADOLINT: false
           VALIDATE_PYTHON_ISORT: false
+          VALIDATE_TYPESCRIPT_STANDARD: false
+          VALIDATE_JAVASCRIPT_STANDARD: false
+          VALIDATE_JSCPD: false
 
   frontend-tests:
     name: Frontend Tests

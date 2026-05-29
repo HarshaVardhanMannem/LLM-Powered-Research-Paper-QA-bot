@@ -15,6 +15,17 @@ vi.mock("@/context/AuthContext", () => ({
 }));
 
 describe("AuthPage", () => {
+  const getSubmitButton = (name: string) => {
+    const buttons = screen.getAllByRole("button", { name });
+    const submitButton = buttons.find(
+      (button) => (button as HTMLButtonElement).type === "submit"
+    );
+    if (!submitButton) {
+      throw new Error(`Submit button "${name}" not found`);
+    }
+    return submitButton;
+  };
+
   beforeEach(() => {
     loginMock.mockReset();
     registerMock.mockReset();
@@ -28,7 +39,7 @@ describe("AuthPage", () => {
 
     await user.type(screen.getByPlaceholderText("Email address"), "user@example.com");
     await user.type(screen.getByPlaceholderText("Password"), "secret123");
-    await user.click(screen.getByRole("button", { name: "Sign In" }));
+    await user.click(getSubmitButton("Sign In"));
 
     expect(loginMock).toHaveBeenCalledWith("user@example.com", "secret123");
   });
@@ -41,7 +52,7 @@ describe("AuthPage", () => {
     await user.type(screen.getByPlaceholderText("Full Name (optional)"), "Ada Lovelace");
     await user.type(screen.getByPlaceholderText("Email address"), "ada@example.com");
     await user.type(screen.getByPlaceholderText("Password"), "secret12");
-    await user.click(screen.getByRole("button", { name: "Create Account" }));
+    await user.click(getSubmitButton("Create Account"));
 
     expect(registerMock).toHaveBeenCalledWith("ada@example.com", "secret12", "Ada Lovelace");
   });

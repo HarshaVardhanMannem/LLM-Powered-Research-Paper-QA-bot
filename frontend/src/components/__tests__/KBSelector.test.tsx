@@ -31,7 +31,7 @@ describe("KBSelector", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Physics" }));
-    await user.click(screen.getAllByText("My Papers")[1]);
+    await user.click(screen.getByRole("button", { name: "My Papers" }));
 
     expect(onChange).toHaveBeenCalledWith([]);
   });

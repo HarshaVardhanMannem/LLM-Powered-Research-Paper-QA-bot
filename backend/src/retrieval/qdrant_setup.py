@@ -38,7 +38,8 @@ def init_qdrant_collection(
 
     if client.collection_exists(config.collection_name):
         collection_info = client.get_collection(config.collection_name)
-        existing_size = collection_info.config.params.vectors.size
+        vectors = collection_info.config.params.vectors
+        existing_size = vectors.size if isinstance(vectors, VectorParams) else None
         if existing_size != config.vector_size:
             logger.warning(
                 "Qdrant collection %s has vector size %s but expected %s. Recreating...",

@@ -15,8 +15,9 @@ from pathlib import Path
 
 # Add backend root to path
 _backend = Path(__file__).resolve().parent.parent
-if str(_backend) not in sys.path:
-    sys.path.insert(0, str(_backend))
+_repo_root = _backend.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
 
 from dotenv import load_dotenv  # noqa: E402
 
@@ -25,7 +26,9 @@ load_dotenv(_backend / ".env")
 from backend.config.settings import EXTRACTION_MODE  # noqa: E402
 from backend.src.data.chunking import get_chunker  # noqa: E402
 from backend.src.data.document_loader import (  # noqa: E402
+    enrich_chunk_metadata,
     load_single_arxiv_document,
+    normalize_paper_metadata,
     preprocess_documents,
 )
 from backend.src.data.extraction import extract_pdf_with_structure  # noqa: E402
@@ -78,7 +81,8 @@ def process_pdf(
     doc_meta = getattr(doc, "metadata", {}) or {}
     title = doc_meta.get("Title", path.stem)
     source = str(path)
-    valid = chunk_document(chunker, doc)
+    doc.metadata["paper_metadata"] = normalize_paper_metadata(doc.metadata)
+    valid = enrich_chunk_metadata(chunk_document(chunker, doc))
     if not valid:
         return 0, paper_id, title
     store.add_documents(
@@ -114,7 +118,8 @@ def process_arxiv(
     doc = processed[0][0]
     title = getattr(doc, "metadata", {}).get("Title", "Untitled")
     source = f"arxiv:{arxiv_id}"
-    valid = chunk_document(chunker, doc)
+    doc.metadata["paper_metadata"] = normalize_paper_metadata(doc.metadata)
+    valid = enrich_chunk_metadata(chunk_document(chunker, doc))
     if not valid:
         return 0, arxiv_id, title
     store.add_documents(

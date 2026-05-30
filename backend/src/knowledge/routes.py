@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session
 from backend.src.auth.deps import get_current_user
 from backend.src.data.chunking import get_chunker
 from backend.src.data.document_loader import (
+    enrich_chunk_metadata,
     load_single_arxiv_document,
+    normalize_paper_metadata,
     preprocess_documents,
 )
 from backend.src.data.extraction import extract_pdf_with_structure
@@ -178,6 +180,11 @@ async def add_document_to_kb(
     current_user: Annotated[User, Depends(get_current_user)],
     file: Optional[UploadFile] = File(None),
     paper_id: Optional[str] = Form(None),
+    title: Optional[str] = Form(None),
+    authors: Optional[str] = Form(None),
+    abstract: Optional[str] = Form(None),
+    published: Optional[str] = Form(None),
+    categories: Optional[str] = Form(None),
 ):
     """Add a document to a KB via ArXiv ID or PDF upload."""
     kb = db.get(KnowledgeBase, kb_id)
@@ -224,7 +231,7 @@ async def add_document_to_kb(
             if not processed or not processed[0]:
                 raise HTTPException(status_code=400, detail="No document content")
             doc = processed[0][0]
-            title = getattr(doc, "metadata", {}).get("Title", "Untitled")
+            title = title or getattr(doc, "metadata", {}).get("Title", "Untitled")
             source = f"arxiv:{paper_id}"
         else:
             if file is None:
@@ -243,8 +250,19 @@ async def add_document_to_kb(
             doc = extract_pdf_with_structure(
                 contents, file.filename, use_structure=use_structure
             )
-            title = doc.metadata.get("Title", file.filename)
+            title = title or doc.metadata.get("Title", file.filename)
             source = file.filename
+
+        doc.metadata.update(
+            {
+                "Title": title,
+                "Authors": authors or doc.metadata.get("Authors", ""),
+                "Summary": abstract or doc.metadata.get("Summary", ""),
+                "Published": published or doc.metadata.get("Published", ""),
+                "Categories": categories or doc.metadata.get("Categories", ""),
+            }
+        )
+        doc.metadata["paper_metadata"] = normalize_paper_metadata(doc.metadata)
 
         if hasattr(chunker, "split_documents"):
             chunks = chunker.split_documents([doc])
@@ -255,7 +273,9 @@ async def add_document_to_kb(
                 status_code=500, detail="Chunker has no split/transform method"
             )
 
-        valid = [c for c in chunks if getattr(c, "page_content", "").strip()]
+        valid = enrich_chunk_metadata(
+            [c for c in chunks if getattr(c, "page_content", "").strip()]
+        )
         if not valid:
             raise HTTPException(status_code=400, detail="No valid chunks from document")
 

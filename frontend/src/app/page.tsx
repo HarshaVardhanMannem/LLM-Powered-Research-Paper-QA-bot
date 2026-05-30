@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import AuthPage from "@/components/AuthPage";
 import Header from "@/components/Header";
@@ -25,6 +25,7 @@ export default function Home() {
   const [feedbackStats, setFeedbackStats] = useState({ likes: 0, dislikes: 0 });
   const [knowledgeBases, setKnowledgeBases] = useState<api.KnowledgeBaseInfo[]>([]);
   const [selectedKBIds, setSelectedKBIds] = useState<number[]>([]);
+  const [knowledgeBasesLoading, setKnowledgeBasesLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -33,16 +34,30 @@ export default function Home() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const refreshKnowledgeBases = useCallback(async () => {
+    setKnowledgeBasesLoading(true);
+    try {
+      const kbs = await api.fetchKnowledgeBases();
+      setKnowledgeBases(kbs);
+      setSelectedKBIds((prev) => prev.filter((id) => kbs.some((kb) => kb.id === id)));
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast(error.response?.data?.detail || "Could not load knowledge bases", "error");
+    } finally {
+      setKnowledgeBasesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       api.fetchPapers().then(setPapers).catch(() => {});
       api.fetchFeedbackStats().then(setFeedbackStats).catch(() => {});
-      api.fetchKnowledgeBases().then(setKnowledgeBases).catch(() => {});
+      refreshKnowledgeBases();
       api.fetchConversations().then((convs) => {
         if (convs?.length) setMessages(convs.map((c) => ({ role: c.role, content: c.content })));
       }).catch(() => {});
     }
-  }, [user]);
+  }, [user, refreshKnowledgeBases]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -104,6 +119,39 @@ export default function Home() {
     }
   };
 
+  const handleCreateKnowledgeBase = async (params: {
+    name: string;
+    domain: string;
+    description?: string;
+    chunking_strategy?: string;
+  }) => {
+    try {
+      const kb = await api.createKnowledgeBase(params);
+      setKnowledgeBases((prev) => [...prev, kb]);
+      showToast(`Created knowledge base: ${kb.name}`);
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast(error.response?.data?.detail || "Could not create knowledge base", "error");
+      throw err;
+    }
+  };
+
+  const handleAddDocumentToKnowledgeBase = async (
+    kbId: number,
+    params: { paper_id?: string; file?: File; title?: string; authors?: string; abstract?: string; categories?: string }
+  ) => {
+    try {
+      const res = await api.addDocumentToKb(kbId, params);
+      const refreshed = await api.fetchKnowledgeBases();
+      setKnowledgeBases(refreshed);
+      showToast(res.message || "Document added to knowledge base");
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast(error.response?.data?.detail || "Could not add document to knowledge base", "error");
+      throw err;
+    }
+  };
+
   const handleFeedback = async (q: string, a: string, type: string) => {
     try {
       await api.submitFeedback(q, a, type);
@@ -135,7 +183,10 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
       <Header user={user} onMenuClick={() => setSidebarOpen(true)} onLogout={handleLogout} />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} papers={papers}
-        onAddPaper={handleAddPaper} onUploadPaper={handleUpload} onDeletePaper={handleDelete} />
+        onAddPaper={handleAddPaper} onUploadPaper={handleUpload} onDeletePaper={handleDelete}
+        knowledgeBases={knowledgeBases}
+        onCreateKnowledgeBase={handleCreateKnowledgeBase}
+        onAddDocumentToKnowledgeBase={handleAddDocumentToKnowledgeBase} />
 
       {/* Main */}
       <div className="pt-16 flex justify-center min-h-screen">
@@ -185,7 +236,9 @@ export default function Home() {
                   knowledgeBases={knowledgeBases}
                   selectedIds={selectedKBIds}
                   onChange={setSelectedKBIds}
+                  onRefresh={refreshKnowledgeBases}
                   loading={loading}
+                  refreshLoading={knowledgeBasesLoading}
                 />
                 <span className="text-xs text-slate-500">
                   {selectedKBIds.length > 0

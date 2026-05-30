@@ -3,7 +3,8 @@
   python -m scripts.bulk_ingest --kb-id <id> --input-dir <path> [--limit 10000]
   python -m scripts.bulk_ingest --kb-id <id> --manifest <csv_path> [--limit 10000]
 
-Input: Directory of PDFs (--input-dir) or manifest CSV with columns: path or arxiv_id, title (optional)
+Input: Directory of PDFs (--input-dir) or manifest CSV with columns:
+path or arxiv_id, title (optional)
 """
 
 import argparse

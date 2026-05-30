@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Plus, Upload, FileText, Loader2, Trash2 } from "lucide-react";
+import { X, Plus, Upload, FileText, Loader2, Trash2, Database } from "lucide-react";
+import type { KnowledgeBaseInfo } from "@/lib/api";
 
 interface Paper { id: string; title: string; }
 
@@ -12,13 +13,47 @@ interface Props {
   onAddPaper: (id: string) => Promise<void>;
   onUploadPaper: (file: File) => Promise<void>;
   onDeletePaper: (id: string) => Promise<void>;
+  knowledgeBases?: KnowledgeBaseInfo[];
+  onCreateKnowledgeBase?: (params: {
+    name: string;
+    domain: string;
+    description?: string;
+    chunking_strategy?: string;
+  }) => Promise<void>;
+  onAddDocumentToKnowledgeBase?: (
+    kbId: number,
+    params: { paper_id?: string; file?: File; title?: string; authors?: string; abstract?: string; categories?: string }
+  ) => Promise<void>;
 }
 
-export default function Sidebar({ open, onClose, papers, onAddPaper, onUploadPaper, onDeletePaper }: Props) {
+export default function Sidebar({
+  open,
+  onClose,
+  papers,
+  onAddPaper,
+  onUploadPaper,
+  onDeletePaper,
+  knowledgeBases = [],
+  onCreateKnowledgeBase = async () => {},
+  onAddDocumentToKnowledgeBase = async () => {},
+}: Props) {
   const [paperId, setPaperId] = useState("");
   const [addLoading, setAddLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [kbName, setKbName] = useState("");
+  const [kbDomain, setKbDomain] = useState("");
+  const [kbDescription, setKbDescription] = useState("");
+  const [kbStrategy, setKbStrategy] = useState("section");
+  const [kbLoading, setKbLoading] = useState(false);
+  const [selectedKbId, setSelectedKbId] = useState<number | "">("");
+  const [kbPaperId, setKbPaperId] = useState("");
+  const [kbFile, setKbFile] = useState<File | null>(null);
+  const [kbDocTitle, setKbDocTitle] = useState("");
+  const [kbDocAuthors, setKbDocAuthors] = useState("");
+  const [kbDocAbstract, setKbDocAbstract] = useState("");
+  const [kbDocCategories, setKbDocCategories] = useState("");
+  const [kbDocLoading, setKbDocLoading] = useState(false);
 
   const handleAdd = async () => {
     if (!paperId.trim()) return;
@@ -32,6 +67,46 @@ export default function Sidebar({ open, onClose, papers, onAddPaper, onUploadPap
     setUploadLoading(true);
     try { await onUploadPaper(file); setFile(null); } catch {}
     finally { setUploadLoading(false); }
+  };
+
+  const handleCreateKb = async () => {
+    if (!kbName.trim() || !kbDomain.trim()) return;
+    setKbLoading(true);
+    try {
+      await onCreateKnowledgeBase({
+        name: kbName,
+        domain: kbDomain,
+        description: kbDescription,
+        chunking_strategy: kbStrategy,
+      });
+      setKbName("");
+      setKbDomain("");
+      setKbDescription("");
+      setKbStrategy("section");
+    } catch {}
+    finally { setKbLoading(false); }
+  };
+
+  const handleAddKbDoc = async () => {
+    if (!selectedKbId || (!kbPaperId.trim() && !kbFile)) return;
+    setKbDocLoading(true);
+    try {
+      await onAddDocumentToKnowledgeBase(Number(selectedKbId), {
+        paper_id: kbPaperId.trim() || undefined,
+        file: kbFile || undefined,
+        title: kbDocTitle,
+        authors: kbDocAuthors,
+        abstract: kbDocAbstract,
+        categories: kbDocCategories,
+      });
+      setKbPaperId("");
+      setKbFile(null);
+      setKbDocTitle("");
+      setKbDocAuthors("");
+      setKbDocAbstract("");
+      setKbDocCategories("");
+    } catch {}
+    finally { setKbDocLoading(false); }
   };
 
   return (
@@ -79,6 +154,62 @@ export default function Sidebar({ open, onClose, papers, onAddPaper, onUploadPap
                   Upload
                 </button>
               )}
+            </div>
+
+            <div className="bg-slate-800/50 border border-slate-700/40 rounded-2xl p-4">
+              <h3 className="text-sm font-semibold text-slate-300 mb-3">Create Knowledge Base</h3>
+              <div className="space-y-2">
+                <input type="text" placeholder="Name" value={kbName} onChange={(e) => setKbName(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                <input type="text" placeholder="Domain, e.g. NLP" value={kbDomain} onChange={(e) => setKbDomain(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                <input type="text" placeholder="Description" value={kbDescription} onChange={(e) => setKbDescription(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                <select value={kbStrategy} onChange={(e) => setKbStrategy(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+                  <option value="section">Section-aware</option>
+                  <option value="recursive">Recursive</option>
+                  <option value="semantic">Semantic</option>
+                </select>
+              </div>
+              <button onClick={handleCreateKb} disabled={kbLoading || !kbName.trim() || !kbDomain.trim()}
+                className="w-full mt-3 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+                {kbLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                Create KB
+              </button>
+            </div>
+
+            <div className="bg-slate-800/50 border border-slate-700/40 rounded-2xl p-4">
+              <h3 className="text-sm font-semibold text-slate-300 mb-3">Add to Knowledge Base</h3>
+              <div className="space-y-2">
+                <select value={selectedKbId} onChange={(e) => setSelectedKbId(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+                  <option value="">Select KB</option>
+                  {knowledgeBases.filter((kb) => !kb.is_system).map((kb) => (
+                    <option key={kb.id} value={kb.id}>{kb.name} ({kb.document_count})</option>
+                  ))}
+                </select>
+                <input type="text" placeholder="ArXiv ID" value={kbPaperId} onChange={(e) => setKbPaperId(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                <label className="flex items-center justify-center gap-2 w-full py-2.5 border-2 border-dashed border-slate-600/50 hover:border-indigo-500/40 rounded-xl text-sm text-slate-400 hover:text-indigo-400 cursor-pointer transition-all">
+                  <Upload className="w-4 h-4" />
+                  {kbFile ? kbFile.name : "Or choose PDF"}
+                  <input type="file" accept=".pdf" hidden onChange={(e) => setKbFile(e.target.files?.[0] || null)} />
+                </label>
+                <input type="text" placeholder="Title override" value={kbDocTitle} onChange={(e) => setKbDocTitle(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                <input type="text" placeholder="Authors" value={kbDocAuthors} onChange={(e) => setKbDocAuthors(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                <textarea placeholder="Abstract or summary" value={kbDocAbstract} onChange={(e) => setKbDocAbstract(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 min-h-20" />
+                <input type="text" placeholder="Categories or keywords" value={kbDocCategories} onChange={(e) => setKbDocCategories(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              </div>
+              <button onClick={handleAddKbDoc} disabled={kbDocLoading || !selectedKbId || (!kbPaperId.trim() && !kbFile)}
+                className="w-full mt-3 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+                {kbDocLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Add to KB
+              </button>
             </div>
 
             {/* Papers List */}

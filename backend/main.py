@@ -5,15 +5,24 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, List, Optional
 
+# flake8: noqa: E402
+# Add the repository root to Python path before package imports. This lets
+# `python main.py` work from inside the backend directory.
+root_dir = str(Path(__file__).resolve().parent.parent)
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
 from backend.config.settings import LLM_MODEL
 from backend.src.auth.deps import get_current_user
 from backend.src.data.document_loader import (
     create_document_chunks,
     create_text_splitter,
+    enrich_chunk_metadata,
     load_single_arxiv_document,
+    normalize_paper_metadata,
     preprocess_documents,
 )
-from backend.src.db.models import User
+from backend.src.db.models import KnowledgeBase, User
 from backend.src.db.session import get_db, init_db
 from backend.src.prompts.chat_prompts import create_chat_prompt
 from backend.src.retrieval.qdrant_setup import init_qdrant_collection
@@ -41,9 +50,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Add the root directory to Python path
-root_dir = str(Path(__file__).parent.parent.parent)
-sys.path.append(root_dir)
 logger.debug(f"Added root directory to Python path: {root_dir}")
 
 # Load environment variables
@@ -158,8 +164,14 @@ def docs_to_string(docs: list[Document]) -> str:
         metadata = getattr(doc, "metadata", {})
         source = metadata.get("source", "")
         title = metadata.get("Title", "")
+        section = metadata.get("section_title", "")
+        authors = metadata.get("authors", "")
+        published = metadata.get("published", "")
         header = f"Source: {source}" if source else ""
         header += f" Title: {title}" if title else ""
+        header += f" Section: {section}" if section else ""
+        header += f" Authors: {authors}" if authors else ""
+        header += f" Published: {published}" if published else ""
         if header:
             result.append(f"{header}\n{content}\n")
         else:
@@ -199,6 +211,11 @@ class Feedback(BaseModel):
 class PaperInfo(BaseModel):
     id: str
     title: str
+    source: Optional[str] = None
+    authors: Optional[str] = None
+    published: Optional[str] = None
+    primary_category: Optional[str] = None
+    categories: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -226,12 +243,28 @@ async def chat(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    """Chat with the user's papers or selected knowledge bases. Requires authentication."""
+    """Chat with the user's papers or selected knowledge bases."""
     logger.info(f"User {current_user.id} asked: {question.text[:100]}...")
     res = ensure_resources()
     store: QdrantStore = res["qdrant_store"]
     try:
         if question.knowledge_base_ids:
+            accessible = (
+                db.query(KnowledgeBase.id)
+                .filter(
+                    KnowledgeBase.id.in_(question.knowledge_base_ids),
+                    (KnowledgeBase.is_system.is_(True))
+                    | (KnowledgeBase.owner_id == current_user.id),
+                )
+                .all()
+            )
+            accessible_ids = {row[0] for row in accessible}
+            requested_ids = set(question.knowledge_base_ids)
+            if accessible_ids != requested_ids:
+                raise HTTPException(
+                    status_code=403,
+                    detail="One or more selected knowledge bases are not accessible.",
+                )
             context_docs = store.search(
                 query=question.text,
                 user_id=None,
@@ -264,7 +297,7 @@ async def chat(
 
         return ChatResponse(
             response=response.content,
-            papers=[PaperInfo(id=p["id"], title=p["title"]) for p in papers],
+            papers=[PaperInfo(**p) for p in papers],
         )
     except Exception as e:
         logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
@@ -334,7 +367,8 @@ async def upload_file(
     store: QdrantStore = res["qdrant_store"]
 
     try:
-        if not file.filename.lower().endswith(".pdf"):
+        filename = file.filename or "uploaded.pdf"
+        if not filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
 
         contents = await file.read()
@@ -351,27 +385,28 @@ async def upload_file(
         if store.paper_exists_for_user(current_user.id, paper_id):
             papers = store.get_user_papers(current_user.id)
             return {
-                "message": f"File already uploaded: {file.filename}",
+                "message": f"File already uploaded: {filename}",
                 "papers": papers,
             }
 
-        doc = load_pdf_from_bytes(contents, filename=file.filename)
+        doc = load_pdf_from_bytes(contents, filename=filename)
+        doc.metadata["paper_metadata"] = normalize_paper_metadata(doc.metadata)
         text_splitter = create_text_splitter()
-        chunks = text_splitter.split_documents([doc])
+        chunks = enrich_chunk_metadata(text_splitter.split_documents([doc]))
 
         if not chunks:
             raise HTTPException(
                 status_code=500, detail="Failed to process document into chunks."
             )
 
-        title = doc.metadata.get("Title", file.filename)
+        title = str(doc.metadata.get("Title", filename))
 
         store.add_documents(
             chunks=chunks,
             user_id=current_user.id,
             paper_id=paper_id,
             paper_title=title,
-            source=file.filename,
+            source=filename,
         )
 
         papers = store.get_user_papers(current_user.id)

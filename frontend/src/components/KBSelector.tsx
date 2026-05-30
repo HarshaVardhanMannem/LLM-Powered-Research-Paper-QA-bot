@@ -1,21 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { BookOpen, ChevronDown } from "lucide-react";
+import { BookOpen, ChevronDown, RefreshCw } from "lucide-react";
 import type { KnowledgeBaseInfo } from "@/lib/api";
 
 interface Props {
   knowledgeBases: KnowledgeBaseInfo[];
   selectedIds: number[];
   onChange: (ids: number[]) => void;
+  onRefresh?: () => void;
   loading?: boolean;
+  refreshLoading?: boolean;
 }
 
 export default function KBSelector({
   knowledgeBases,
   selectedIds,
   onChange,
+  onRefresh,
   loading = false,
+  refreshLoading = false,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -56,6 +60,17 @@ export default function KBSelector({
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-20 py-1">
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={refreshLoading}
+                className="w-full px-4 py-2.5 text-left text-sm hover:bg-slate-800/80 transition-colors flex items-center gap-2 text-slate-300"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshLoading ? "animate-spin" : ""}`} />
+                Refresh knowledge bases
+              </button>
+            )}
             <button
               type="button"
               onClick={() => toggle(0)}
@@ -68,6 +83,11 @@ export default function KBSelector({
             </button>
             {knowledgeBases.length > 0 && (
               <div className="border-t border-slate-700/50 my-1" />
+            )}
+            {knowledgeBases.length === 0 && (
+              <div className="px-4 py-3 text-xs text-slate-500">
+                No knowledge bases found.
+              </div>
             )}
             {knowledgeBases.map((kb) => (
               <button
@@ -82,7 +102,7 @@ export default function KBSelector({
                 <div className="flex-1 min-w-0">
                   <span className="truncate block">{kb.name}</span>
                   <span className="text-xs text-slate-500">
-                    {kb.document_count} docs · {kb.domain}
+                    {kb.document_count} docs - {kb.domain}
                   </span>
                 </div>
               </button>
@@ -93,3 +113,4 @@ export default function KBSelector({
     </div>
   );
 }
+

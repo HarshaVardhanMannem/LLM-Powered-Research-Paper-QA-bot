@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Seed predefined/system knowledge bases from config. Usage:
-  python -m scripts.seed_predefined_kbs [--ingest]
-  When --ingest is passed, also runs bulk ingest using configured static paper IDs
-  and arXiv category/year searches.
+python -m scripts.seed_predefined_kbs [--ingest]
+When --ingest is passed, also runs bulk ingest using configured static paper IDs
+and arXiv category/year searches.
 """
 
 import argparse
@@ -21,7 +21,6 @@ from dotenv import load_dotenv  # noqa: E402
 load_dotenv(_backend / ".env")
 
 from backend.config.kb_config import (  # noqa: E402
-    PREDEFINED_KB_DOMAINS,
     get_predefined_kb_specs,
     get_domain_paper_ids,
     load_custom_predefined_specs,
@@ -49,7 +48,9 @@ def _find_existing_system_kb(db, name: str, domain: str) -> KnowledgeBase | None
     )
 
 
-def _create_or_get_system_kb(db, name: str, description: str, domain: str) -> KnowledgeBase:
+def _create_or_get_system_kb(
+    db, name: str, description: str, domain: str
+) -> KnowledgeBase:
     existing = _find_existing_system_kb(db, name=name, domain=domain)
     if existing:
         logger.info("System KB already exists: %s (id=%s)", name, existing.id)
@@ -70,7 +71,9 @@ def _create_or_get_system_kb(db, name: str, description: str, domain: str) -> Kn
     return kb
 
 
-def _ingest_arxiv_ids(kb: KnowledgeBase, paper_ids: list[str], limit: int | None) -> None:
+def _ingest_arxiv_ids(
+    kb: KnowledgeBase, paper_ids: list[str], limit: int | None
+) -> None:
     if not paper_ids:
         logger.info("No paper IDs for %s, skipping ingest", kb.name)
         return

@@ -32,6 +32,7 @@ class PredefinedKBSpec:
         end = f"{self.year}12312359"
         return f"({category_query}) AND submittedDate:[{start} TO {end}]"
 
+
 # Comma-separated domain names for predefined KBs
 PREDEFINED_KB_DOMAINS: List[str] = [
     d.strip()

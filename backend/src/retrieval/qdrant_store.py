@@ -1,8 +1,8 @@
-"""Qdrant-backed vector store: store and retrieve documents per user and knowledge base."""
+"""Qdrant-backed vector store for users and knowledge bases."""
 
 import logging
 import uuid
-from typing import List, Optional
+from typing import Any, List, Optional, cast
 
 from langchain_core.documents import Document
 from qdrant_client import QdrantClient
@@ -64,8 +64,16 @@ class QdrantStore:
                 part
                 for part in [
                     f"Title: {paper_meta['title']}",
-                    f"Authors: {paper_meta['authors']}" if paper_meta["authors"] else "",
-                    f"Abstract: {paper_meta['summary']}" if paper_meta["summary"] else "",
+                    (
+                        f"Authors: {paper_meta['authors']}"
+                        if paper_meta["authors"]
+                        else ""
+                    ),
+                    (
+                        f"Abstract: {paper_meta['summary']}"
+                        if paper_meta["summary"]
+                        else ""
+                    ),
                     f"Domain: {domain}" if domain else "",
                     f"Section: {section}" if section else "",
                 ]
@@ -137,7 +145,7 @@ class QdrantStore:
         """Retrieve documents relevant to query, with optional filters."""
         query_vector = self.embedder.embed_query(query)
 
-        must_conditions = []
+        must_conditions: list[FieldCondition] = []
         if kb_ids:
             must_conditions.append(
                 FieldCondition(key="kb_id", match=MatchAny(any=kb_ids))
@@ -166,7 +174,7 @@ class QdrantStore:
         results = self.client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
-            query_filter=Filter(must=must_conditions),
+            query_filter=Filter(must=cast(Any, must_conditions)),
             limit=limit,
             with_payload=True,
         )

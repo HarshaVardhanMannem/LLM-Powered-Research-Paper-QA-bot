@@ -15,6 +15,7 @@ from qdrant_client.http.models import (
 )
 
 from backend.config.qdrant_config import get_qdrant_config
+from backend.src.data.document_loader import normalize_paper_metadata
 from backend.src.embedding.embeddings import get_embedder
 from backend.src.retrieval.qdrant_setup import get_qdrant_client
 
@@ -54,11 +55,31 @@ class QdrantStore:
             return 0
 
         texts = [c.page_content for c in valid]
-        vectors = self.embedder.embed_documents(texts)
+        enriched_texts = []
+        for chunk in valid:
+            meta = getattr(chunk, "metadata", {}) or {}
+            paper_meta = normalize_paper_metadata(meta)
+            section = meta.get("section_title", "")
+            retrieval_prefix = "\n".join(
+                part
+                for part in [
+                    f"Title: {paper_meta['title']}",
+                    f"Authors: {paper_meta['authors']}" if paper_meta["authors"] else "",
+                    f"Abstract: {paper_meta['summary']}" if paper_meta["summary"] else "",
+                    f"Domain: {domain}" if domain else "",
+                    f"Section: {section}" if section else "",
+                ]
+                if part
+            )
+            enriched_texts.append(f"{retrieval_prefix}\n\n{chunk.page_content}")
+        vectors = self.embedder.embed_documents(enriched_texts)
 
         points = []
         for idx, (text, vector, chunk) in enumerate(zip(texts, vectors, valid)):
             chunk_meta = getattr(chunk, "metadata", {})
+            paper_meta = chunk_meta.get("paper_metadata") or normalize_paper_metadata(
+                chunk_meta
+            )
             payload = {
                 "user_id": user_id,
                 "paper_id": paper_id,
@@ -66,6 +87,13 @@ class QdrantStore:
                 "source": source or chunk_meta.get("source", ""),
                 "title": chunk_meta.get("Title", paper_title),
                 "page_content": text,
+                "authors": paper_meta.get("authors", ""),
+                "summary": paper_meta.get("summary", ""),
+                "published": paper_meta.get("published", ""),
+                "primary_category": paper_meta.get("primary_category", ""),
+                "categories": paper_meta.get("categories", ""),
+                "entry_id": paper_meta.get("entry_id", ""),
+                "doi": paper_meta.get("doi", ""),
             }
             if kb_id is not None:
                 payload["kb_id"] = kb_id
@@ -75,6 +103,8 @@ class QdrantStore:
             payload["section_level"] = chunk_meta.get("section_level", 0)
             payload["page_number"] = chunk_meta.get("page_number", 0)
             payload["chunk_index"] = chunk_meta.get("chunk_index", idx)
+            payload["chunk_total"] = chunk_meta.get("chunk_total", len(valid))
+            payload["start_index"] = chunk_meta.get("start_index", 0)
             points.append(
                 PointStruct(
                     id=str(uuid.uuid4()),
@@ -150,9 +180,13 @@ class QdrantStore:
                 "paper_id": payload.get("paper_id", ""),
                 "paper_title": payload.get("paper_title", ""),
                 "score": point.score,
+                "authors": payload.get("authors", ""),
+                "summary": payload.get("summary", ""),
+                "published": payload.get("published", ""),
+                "primary_category": payload.get("primary_category", ""),
+                "categories": payload.get("categories", ""),
+                "section_title": payload.get("section_title", ""),
             }
-            if payload.get("section_title"):
-                meta["section_title"] = payload["section_title"]
             if payload.get("domain"):
                 meta["domain"] = payload["domain"]
             docs.append(
@@ -165,8 +199,16 @@ class QdrantStore:
         for point in points:
             pid = point.payload.get("paper_id", "")
             if pid and pid not in seen:
-                seen[pid] = point.payload.get("paper_title", "Untitled")
-        return [{"id": pid, "title": title} for pid, title in seen.items()]
+                seen[pid] = {
+                    "id": pid,
+                    "title": point.payload.get("paper_title", "Untitled"),
+                    "source": point.payload.get("source", ""),
+                    "authors": point.payload.get("authors", ""),
+                    "published": point.payload.get("published", ""),
+                    "primary_category": point.payload.get("primary_category", ""),
+                    "categories": point.payload.get("categories", ""),
+                }
+        return list(seen.values())
 
     def get_user_papers(self, user_id: int) -> list[dict]:
         """Get distinct papers uploaded by a user."""
@@ -176,7 +218,15 @@ class QdrantStore:
                 must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))]
             ),
             limit=1000,
-            with_payload=["paper_id", "paper_title"],
+            with_payload=[
+                "paper_id",
+                "paper_title",
+                "source",
+                "authors",
+                "published",
+                "primary_category",
+                "categories",
+            ],
         )
 
         return self._collect_distinct_papers(results[0])
@@ -216,7 +266,15 @@ class QdrantStore:
                 must=[FieldCondition(key="kb_id", match=MatchValue(value=kb_id))]
             ),
             limit=10000,
-            with_payload=["paper_id", "paper_title"],
+            with_payload=[
+                "paper_id",
+                "paper_title",
+                "source",
+                "authors",
+                "published",
+                "primary_category",
+                "categories",
+            ],
         )
         return self._collect_distinct_papers(results[0])
 

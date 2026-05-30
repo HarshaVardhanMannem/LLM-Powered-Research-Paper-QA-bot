@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Sequence
 
 from langchain_core.documents import BaseDocumentTransformer, Document
 from langchain_text_splitters import (
@@ -84,7 +84,7 @@ class SectionChunker(BaseDocumentTransformer):
 
     def transform_documents(
         self,
-        documents: List[Document],
+        documents: Sequence[Document],
         **kwargs: Any,
     ) -> List[Document]:
         """Split documents by markdown headers, then sub-split long chunks."""

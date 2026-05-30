@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, List, Optional
 
+# flake8: noqa: E402
 # Add the repository root to Python path before package imports. This lets
 # `python main.py` work from inside the backend directory.
 root_dir = str(Path(__file__).resolve().parent.parent)
@@ -242,7 +243,7 @@ async def chat(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    """Chat with the user's papers or selected knowledge bases. Requires authentication."""
+    """Chat with the user's papers or selected knowledge bases."""
     logger.info(f"User {current_user.id} asked: {question.text[:100]}...")
     res = ensure_resources()
     store: QdrantStore = res["qdrant_store"]
@@ -366,7 +367,8 @@ async def upload_file(
     store: QdrantStore = res["qdrant_store"]
 
     try:
-        if not file.filename.lower().endswith(".pdf"):
+        filename = file.filename or "uploaded.pdf"
+        if not filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
 
         contents = await file.read()
@@ -383,11 +385,11 @@ async def upload_file(
         if store.paper_exists_for_user(current_user.id, paper_id):
             papers = store.get_user_papers(current_user.id)
             return {
-                "message": f"File already uploaded: {file.filename}",
+                "message": f"File already uploaded: {filename}",
                 "papers": papers,
             }
 
-        doc = load_pdf_from_bytes(contents, filename=file.filename)
+        doc = load_pdf_from_bytes(contents, filename=filename)
         doc.metadata["paper_metadata"] = normalize_paper_metadata(doc.metadata)
         text_splitter = create_text_splitter()
         chunks = enrich_chunk_metadata(text_splitter.split_documents([doc]))
@@ -397,14 +399,14 @@ async def upload_file(
                 status_code=500, detail="Failed to process document into chunks."
             )
 
-        title = doc.metadata.get("Title", file.filename)
+        title = str(doc.metadata.get("Title", filename))
 
         store.add_documents(
             chunks=chunks,
             user_id=current_user.id,
             paper_id=paper_id,
             paper_title=title,
-            source=file.filename,
+            source=filename,
         )
 
         papers = store.get_user_papers(current_user.id)

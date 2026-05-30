@@ -236,7 +236,8 @@ async def add_document_to_kb(
         else:
             if file is None:
                 raise HTTPException(status_code=400, detail="File upload required")
-            if not file.filename.lower().endswith(".pdf"):
+            filename = file.filename or "uploaded.pdf"
+            if not filename.lower().endswith(".pdf"):
                 raise HTTPException(status_code=400, detail="Only PDF files allowed")
             contents = await file.read()
             MAX_SIZE = 10 * 1024 * 1024
@@ -248,10 +249,12 @@ async def add_document_to_kb(
                 docs = store.get_kb_documents(kb.id)
                 return {"message": "File already in KB", "documents": docs}
             doc = extract_pdf_with_structure(
-                contents, file.filename, use_structure=use_structure
+                contents, filename, use_structure=use_structure
             )
-            title = title or doc.metadata.get("Title", file.filename)
-            source = file.filename
+            if isinstance(doc, list):
+                doc = doc[0]
+            title = title or str(doc.metadata.get("Title", filename))
+            source = filename
 
         doc.metadata.update(
             {
@@ -283,7 +286,7 @@ async def add_document_to_kb(
             chunks=valid,
             user_id=0,
             paper_id=paper_id,
-            paper_title=title,
+            paper_title=str(title),
             source=source,
             kb_id=kb.id,
             domain=kb.domain,
@@ -291,7 +294,7 @@ async def add_document_to_kb(
         kbdoc = KnowledgeBaseDocument(
             kb_id=kb.id,
             document_id=paper_id,
-            title=title,
+            title=str(title),
             source=source,
             chunk_count=len(valid),
         )

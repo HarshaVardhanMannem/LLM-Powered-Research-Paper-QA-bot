@@ -1,6 +1,7 @@
 """Chunking strategy factory: recursive, section, and semantic chunkers."""
 
 import logging
+import re
 from typing import Any, List, Optional
 
 from langchain_core.documents import BaseDocumentTransformer, Document
@@ -17,6 +18,14 @@ from backend.config.settings import (
 )
 
 logger = logging.getLogger(__name__)
+
+RESEARCH_SECTION_PATTERN = re.compile(
+    r"^\s*(?:\d+(?:\.\d+)*\.?\s+)?"
+    r"(abstract|introduction|background|related work|methodology|methods?|"
+    r"experiments?|experimental setup|results?|discussion|limitations?|"
+    r"conclusion|future work|appendix|acknowledgements?)\s*$",
+    re.IGNORECASE,
+)
 
 
 class SectionChunker(BaseDocumentTransformer):
@@ -48,7 +57,19 @@ class SectionChunker(BaseDocumentTransformer):
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             separators=CHUNK_SEPARATORS,
+            add_start_index=True,
         )
+
+    def _markdownize_research_sections(self, text: str) -> str:
+        """Promote common research-paper headings so section splitting works on PDFs."""
+        lines = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#") or not RESEARCH_SECTION_PATTERN.match(stripped):
+                lines.append(line)
+                continue
+            lines.append(f"## {stripped.title()}")
+        return "\n".join(lines)
 
     def _merge_section_metadata(self, meta: dict) -> tuple[str, int]:
         """Derive section_title and section_level from header metadata."""
@@ -72,7 +93,8 @@ class SectionChunker(BaseDocumentTransformer):
             if not doc.page_content or not doc.page_content.strip():
                 continue
             try:
-                splits = self._header_splitter.split_text(doc.page_content)
+                content = self._markdownize_research_sections(doc.page_content)
+                splits = self._header_splitter.split_text(content)
             except Exception as e:
                 logger.warning(
                     "MarkdownHeaderTextSplitter failed, falling back to recursive: %s",
@@ -95,6 +117,7 @@ class SectionChunker(BaseDocumentTransformer):
                 if len(split.page_content) <= self.chunk_size:
                     if len(split.page_content) >= self.min_chunk_length:
                         meta["chunk_index"] = 0
+                        meta["chunk_total"] = 1
                         all_chunks.append(
                             Document(
                                 page_content=split.page_content,
@@ -107,6 +130,7 @@ class SectionChunker(BaseDocumentTransformer):
                         if len(sub.page_content) >= self.min_chunk_length:
                             sub_meta = {**meta, **sub.metadata}
                             sub_meta["chunk_index"] = idx
+                            sub_meta["chunk_total"] = len(sub_chunks)
                             all_chunks.append(
                                 Document(
                                     page_content=sub.page_content,
@@ -143,6 +167,7 @@ def get_chunker(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             separators=kwargs.get("separators", CHUNK_SEPARATORS),
+            add_start_index=True,
         )
     if strategy == "section":
         return SectionChunker(
@@ -160,6 +185,7 @@ def get_chunker(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 separators=kwargs.get("separators", CHUNK_SEPARATORS),
+                add_start_index=True,
             )
         try:
             from langchain_experimental.text_splitter import SemanticChunker
@@ -181,10 +207,12 @@ def get_chunker(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 separators=kwargs.get("separators", CHUNK_SEPARATORS),
+                add_start_index=True,
             )
     logger.warning("Unknown chunking strategy %r, using recursive", strategy)
     return RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         separators=kwargs.get("separators", CHUNK_SEPARATORS),
+        add_start_index=True,
     )
